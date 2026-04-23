@@ -1,0 +1,13 @@
+{
+  "message_type": "moderation.mute.created",
+  "messageVersion": 1,
+  "target": {
+    "player_uuid": "uuid-8",
+    "playerName": "MutedPlayer"
+  },
+  "actor": {
+    "actorName": "mod"
+  },
+  "reason": "spam",
+  "server": "survival"
+}
