@@ -43,7 +43,7 @@ INVALID_CASES = [
         fixtures_root()
         / "invalid"
         / "discord"
-        / "discord.unlink.command.v1.snake-case.json",
+        / "discord.unlink.command.v1.missing-discord.json",
     ),
     (
         spec_root()

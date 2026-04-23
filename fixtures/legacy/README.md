@@ -1,3 +1,5 @@
 # Legacy Fixtures
 
-Legacy fixtures capture historical payload shapes or names for compatibility tests during migration windows.
+This directory is intentionally unused in the current strict-canonical setup.
+
+`xcore-protocol` keeps canonical schemas and canonical fixtures only. If temporary legacy or compatibility fixtures are needed during migration, keep them in consumer/application repositories instead of expanding the protocol surface here.

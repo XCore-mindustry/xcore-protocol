@@ -20,8 +20,8 @@ It also documents how current Redis envelope fields should map into the canonica
 ### 1. Canonical outbound only
 New producers should emit only the canonical v1 schema.
 
-### 2. Compat readers isolate legacy
-Legacy spellings and old event-type variants should be accepted only in compatibility readers/adapters.
+### 2. Repository scope stays canonical
+Legacy spellings, old event-type variants, and temporary translation logic should live in consumer repositories during migration, not in `xcore-protocol` schemas or fixtures.
 
 ### 3. Internal models are not the wire contract
 `BanData`, `MuteData`, and transport records in `TransportEvents` are source material for mapping, not the canonical protocol definition.
@@ -376,12 +376,10 @@ Canonical envelope `target` is not always the same as current payload `server`. 
 ## Implementation Notes For `XCore-discord-bot`
 
 ### Inbound ban/mute/vote-kick
-- Move alias-heavy current parsing behind compat readers.
 - Parse canonical v1 first on the main path.
 
 ### Outbound kick-banned / pardon
-- Publish canonical v1 command payloads instead of current minimal legacy shapes.
-- Stop sending duplicate naming variants.
+- Publish canonical v1 command payloads.
 
 ## Open Follow-Up Questions
 

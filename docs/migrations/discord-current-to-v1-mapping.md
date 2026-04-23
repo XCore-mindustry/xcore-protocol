@@ -13,7 +13,7 @@ Map the current Discord linking/admin payloads used by `XCore-plugin` and `XCore
 - Canonical outbound payloads use camelCase only.
 - Command and event semantics stay separate.
 - Current epoch-millis business timestamps are converted to ISO-8601 UTC in canonical payloads.
-- Legacy names such as `discord.link_confirm` remain compatibility concerns only.
+- Legacy names such as `discord.link_confirm` are migration concerns outside the canonical protocol surface.
 
 ## Discord Link Confirm
 
@@ -128,7 +128,6 @@ Current plugin/bot fields:
 
 ## Main Migration Notes
 - Current plugin route semantics treat confirm, unlink, and admin-access as commands; canonical naming keeps that distinction explicit with `.command`.
-- Current bot-side consumer models still accept alias-heavy snake_case and camelCase variants; canonical schemas do not.
 - Current command payloads may not always naturally carry `playerName`; if this becomes friction, follow the same path noted in moderation and introduce a less strict command-target subtype later.
 
 ## Recommended Next Step

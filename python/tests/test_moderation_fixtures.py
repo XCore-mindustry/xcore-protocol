@@ -47,7 +47,7 @@ INVALID_CASES = [
         fixtures_root()
         / "invalid"
         / "moderation"
-        / "moderation.mute.created.v1.snake-case-fields.json",
+        / "moderation.mute.created.v1.bad-expiration-type.json",
     ),
     (
         spec_root() / "messages" / "moderation" / "moderation.vote-kick.created.v1.json",
