@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .discovery import GenerationPlan, generated_python_root
+from .families import FamilyConfig, require_family_config
 from .model import FieldShape, FieldType, NormalizedField, NormalizedSchema
 from .route_descriptors import RouteDescriptor
 
@@ -37,17 +38,20 @@ def check_python_outputs(plan: GenerationPlan) -> tuple[Path, ...]:
 def render_python_outputs(plan: GenerationPlan) -> tuple[GeneratedFile, ...]:
     output_root = generated_python_root()
     outputs = [GeneratedFile(path=output_root / "shared.py", content=_render_shared_module(plan.shared_schemas))]
-    for family in ("maps", "chat"):
-        schemas = plan.message_schemas_for(family)
-        if not schemas:
+    for family_input in plan.family_inputs:
+        if not family_input.message_schemas:
             continue
         outputs.append(
             GeneratedFile(
-                path=output_root / f"{family}.py",
-                content=_render_family_module(family, schemas, plan.shared_schemas),
+                path=output_root / f"{family_input.config.python_module}.py",
+                content=_render_family_module(
+                    family_input.config,
+                    family_input.message_schemas,
+                    plan.shared_schemas,
+                ),
             )
         )
-    outputs.append(GeneratedFile(path=output_root / "routes.py", content=_render_routes_module(plan.route_descriptors)))
+    outputs.append(GeneratedFile(path=output_root / "routes.py", content=_render_routes_module(plan)))
     outputs.append(GeneratedFile(path=output_root / "__init__.py", content=_render_package_init(plan)))
     return tuple(outputs)
 
@@ -55,17 +59,17 @@ def render_python_outputs(plan: GenerationPlan) -> tuple[GeneratedFile, ...]:
 def _render_package_init(plan: GenerationPlan) -> str:
     family_schemas = [
         schema
-        for family in ("maps", "chat")
-        for schema in plan.message_schemas_for(family)
+        for family_input in plan.family_inputs
+        for schema in family_input.message_schemas
     ]
     exports = [schema.title for schema in plan.shared_schemas] + [schema.title for schema in family_schemas]
     route_exports = [route.constant_name for route in plan.route_descriptors]
     export_block = "\n".join(f"    \"{name}\"," for name in exports)
     route_export_block = "\n".join(f"    \"{name}\"," for name in route_exports)
     family_imports = "".join(
-        _render_family_import_block(family, plan.message_schemas_for(family))
-        for family in ("maps", "chat")
-        if plan.message_schemas_for(family)
+        _render_family_import_block(family_input.config, family_input.message_schemas)
+        for family_input in plan.family_inputs
+        if family_input.message_schemas
     )
     shared_import_block = (
         "from .shared import (\n"
@@ -75,29 +79,11 @@ def _render_package_init(plan: GenerationPlan) -> str:
         else ""
     )
     route_import_lines = [f"    {route.constant_name}," for route in plan.route_descriptors]
-    route_import_lines.extend(
-        [
-            "    RouteDescriptor,",
-            "    RouteResponseDescriptor,",
-            "    ROUTES_BY_MESSAGE,",
-            "    MapsRouteDescriptor,",
-            "    MapsRouteResponseDescriptor,",
-            "    MAPS_ROUTES_BY_MESSAGE,",
-        ]
-    )
+    route_import_lines.extend(_python_route_runtime_imports(plan))
     all_lines = [export_block] if export_block else []
     if route_export_block:
         all_lines.append(route_export_block)
-    all_lines.extend(
-        [
-            '    "RouteDescriptor",',
-            '    "RouteResponseDescriptor",',
-            '    "ROUTES_BY_MESSAGE",',
-            '    "MapsRouteDescriptor",',
-            '    "MapsRouteResponseDescriptor",',
-            '    "MAPS_ROUTES_BY_MESSAGE",',
-        ]
-    )
+    all_lines.extend(_python_route_runtime_exports(plan))
     return (
         '"""Generated canonical protocol models for the supported subset."""\n\n'
         + family_imports
@@ -111,15 +97,54 @@ def _render_package_init(plan: GenerationPlan) -> str:
     )
 
 
-def _render_family_import_block(family: str, schemas: tuple[NormalizedSchema, ...]) -> str:
+def _python_route_runtime_imports(plan: GenerationPlan) -> list[str]:
+    imports = [
+        "    RouteDescriptor,",
+        "    RouteResponseDescriptor,",
+        "    ROUTES_BY_MESSAGE,",
+    ]
+    if _has_maps_compat_aliases(plan):
+        imports.extend(
+            [
+                "    MapsRouteDescriptor,",
+                "    MapsRouteResponseDescriptor,",
+                "    MAPS_ROUTES_BY_MESSAGE,",
+            ]
+        )
+    return imports
+
+
+def _python_route_runtime_exports(plan: GenerationPlan) -> list[str]:
+    exports = [
+        '    "RouteDescriptor",',
+        '    "RouteResponseDescriptor",',
+        '    "ROUTES_BY_MESSAGE",',
+    ]
+    if _has_maps_compat_aliases(plan):
+        exports.extend(
+            [
+                '    "MapsRouteDescriptor",',
+                '    "MapsRouteResponseDescriptor",',
+                '    "MAPS_ROUTES_BY_MESSAGE",',
+            ]
+        )
+    return exports
+
+
+def _has_maps_compat_aliases(plan: GenerationPlan) -> bool:
+    return any("MAPS_ROUTES_BY_MESSAGE" in family_input.config.route_aliases for family_input in plan.family_inputs)
+
+
+def _render_family_import_block(config: FamilyConfig, schemas: tuple[NormalizedSchema, ...]) -> str:
     return (
-        f"from .{family} import (\n"
+        f"from .{config.python_module} import (\n"
         + "\n".join(f"    {schema.title}," for schema in schemas)
         + "\n)\n"
     )
 
 
-def _render_routes_module(routes: tuple[RouteDescriptor, ...]) -> str:
+def _render_routes_module(plan: GenerationPlan) -> str:
+    routes = plan.route_descriptors
     route_modules = _route_import_modules(routes)
     constants = "\n\n".join(_render_route_constant(route) for route in routes)
     registry_entries = "\n".join(
@@ -139,11 +164,12 @@ def _render_routes_module(routes: tuple[RouteDescriptor, ...]) -> str:
             '    "RouteDescriptor",',
             '    "RouteResponseDescriptor",',
             '    "ROUTES_BY_MESSAGE",',
-            '    "MapsRouteDescriptor",',
-            '    "MapsRouteResponseDescriptor",',
-            '    "MAPS_ROUTES_BY_MESSAGE",',
         ]
     )
+    if _route_alias_names(routes):
+        export_list.extend(
+            _route_alias_export_lines(routes)
+        )
     return (
         '"""Generated canonical route descriptors."""\n\n'
         + "from __future__ import annotations\n\n"
@@ -157,32 +183,72 @@ def _render_routes_module(routes: tuple[RouteDescriptor, ...]) -> str:
         + "\n\nROUTES_BY_MESSAGE: dict[tuple[str, int], RouteDescriptor] = {\n"
         + registry_entries
         + "\n}\n\n"
-        + "MapsRouteResponseDescriptor = RouteResponseDescriptor\n"
-        + "MapsRouteDescriptor = RouteDescriptor\n"
-        + "MAPS_ROUTES_BY_MESSAGE = ROUTES_BY_MESSAGE\n\n"
+        + _render_python_route_aliases(routes)
         + "__all__ = [\n"
         + "\n".join(export_list)
         + "\n]\n"
     )
 
 
+def _render_python_route_aliases(routes: tuple[RouteDescriptor, ...]) -> str:
+    alias_names = _route_alias_names(routes)
+    if not alias_names:
+        return ""
+    lines: list[str] = []
+    if "MAPS_ROUTES_BY_MESSAGE" in alias_names:
+        lines.extend(
+            [
+                "MapsRouteResponseDescriptor = RouteResponseDescriptor",
+                "MapsRouteDescriptor = RouteDescriptor",
+                "MAPS_ROUTES_BY_MESSAGE = ROUTES_BY_MESSAGE",
+            ]
+        )
+    return "\n".join(lines) + "\n\n"
+
+
+def _route_alias_names(routes: tuple[RouteDescriptor, ...]) -> tuple[str, ...]:
+    alias_names: list[str] = []
+    for route in routes:
+        for alias_name in require_family_config(route.family).route_aliases:
+            if alias_name not in alias_names:
+                alias_names.append(alias_name)
+    return tuple(alias_names)
+
+
+def _route_alias_export_lines(routes: tuple[RouteDescriptor, ...]) -> list[str]:
+    export_lines: list[str] = []
+    if "MAPS_ROUTES_BY_MESSAGE" in _route_alias_names(routes):
+        export_lines.extend(
+            [
+                '    "MapsRouteDescriptor",',
+                '    "MapsRouteResponseDescriptor",',
+                '    "MAPS_ROUTES_BY_MESSAGE",',
+            ]
+        )
+    return export_lines
+
+
 def _route_import_modules(routes: tuple[RouteDescriptor, ...]) -> tuple[tuple[str, tuple[str, ...]], ...]:
     module_to_titles: dict[str, list[str]] = {}
     for route in routes:
         for schema_title in _route_schema_titles(route):
-            module_name = route.family if schema_title == route.message.schema_title else _response_family_for_schema_title(routes, schema_title)
+            module_name = (
+                require_family_config(route.family).python_module
+                if schema_title == route.message.schema_title
+                else _response_module_for_schema_title(routes, schema_title)
+            )
             titles = module_to_titles.setdefault(module_name, [])
             if schema_title not in titles:
                 titles.append(schema_title)
     return tuple((module_name, tuple(schema_titles)) for module_name, schema_titles in module_to_titles.items())
 
 
-def _response_family_for_schema_title(routes: tuple[RouteDescriptor, ...], schema_title: str) -> str:
+def _response_module_for_schema_title(routes: tuple[RouteDescriptor, ...], schema_title: str) -> str:
     for route in routes:
         if route.message.schema_title == schema_title:
-            return route.family
+            return require_family_config(route.family).python_module
         if route.response is not None and route.response.message.schema_title == schema_title:
-            return route.family
+            return require_family_config(route.family).python_module
     raise ValueError(f"Unknown schema title for route import: {schema_title}")
 
 
@@ -270,7 +336,7 @@ def _render_shared_module(shared_schemas: tuple[NormalizedSchema, ...]) -> str:
 
 
 def _render_family_module(
-    family: str,
+    config: FamilyConfig,
     message_schemas: tuple[NormalizedSchema, ...],
     shared_schemas: tuple[NormalizedSchema, ...],
 ) -> str:
@@ -278,7 +344,7 @@ def _render_family_module(
     exports = "\n".join(f"    \"{schema.title}\"," for schema in message_schemas)
     classes = "\n\n".join(_render_message_class(schema) for schema in message_schemas)
     return (
-        f'"""Generated canonical {family} protocol models."""\n\n'
+        f'"""Generated canonical {config.name} protocol models."""\n\n'
         "from __future__ import annotations\n\n"
         "from collections.abc import Mapping\n"
         "from dataclasses import dataclass\n"

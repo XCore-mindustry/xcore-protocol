@@ -1,7 +1,14 @@
 from __future__ import annotations
 
 import subprocess
+import sys
 from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from generators.families import generated_model_test_paths
 
 
 def run_step(repo_root: Path, *args: str) -> None:
@@ -9,9 +16,9 @@ def run_step(repo_root: Path, *args: str) -> None:
 
 
 def main() -> int:
-    repo_root = Path(__file__).resolve().parents[1]
-    run_step(repo_root, "uv", "run", "pytest", "python/tests/test_generated_maps_models.py")
-    run_step(repo_root, "uv", "run", "pytest", "python/tests/test_generated_chat_models.py")
+    repo_root = REPO_ROOT
+    for test_path in generated_model_test_paths():
+        run_step(repo_root, "uv", "run", "pytest", test_path)
     return 0
 
 

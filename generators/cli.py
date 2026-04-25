@@ -6,6 +6,7 @@ import argparse
 from collections.abc import Sequence
 
 from .discovery import load_generation_plan
+from .families import default_family_name, family_argument_help
 from .java_writer import check_java_outputs, write_java_outputs
 from .python_writer import check_python_outputs, write_python_outputs
 
@@ -30,7 +31,7 @@ def build_parser() -> argparse.ArgumentParser:
     generate_parser.add_argument(
         "--family",
         default=None,
-        help="Restrict generation to one protocol family, such as maps.",
+        help=family_argument_help(),
     )
 
     check_parser = subparsers.add_parser(
@@ -46,7 +47,7 @@ def build_parser() -> argparse.ArgumentParser:
     check_parser.add_argument(
         "--family",
         default=None,
-        help="Restrict the check to one protocol family, such as maps.",
+        help=family_argument_help(),
     )
 
     inspect_parser = subparsers.add_parser(
@@ -56,7 +57,7 @@ def build_parser() -> argparse.ArgumentParser:
     inspect_parser.add_argument(
         "--family",
         default=None,
-        help="Restrict inspection to one protocol family, such as maps.",
+        help=family_argument_help(),
     )
 
     return parser
@@ -86,7 +87,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
     if args.command == "inspect":
         plan = load_generation_plan(family=args.family)
-        requested_family = args.family or "maps"
+        requested_family = args.family or default_family_name()
         print(
             "shared="
             + ", ".join(schema.title for schema in plan.shared_schemas)

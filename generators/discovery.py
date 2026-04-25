@@ -5,16 +5,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from .families import FamilyConfig, resolve_family_configs
 from .model import NormalizedRoute, NormalizedSchema, load_message_schema, load_routes, load_shared_schema
 from .route_descriptors import RouteDescriptor, build_route_descriptors
-
-
-SUPPORTED_FAMILIES = ("maps", "chat")
 
 
 @dataclass(frozen=True, slots=True)
 class FamilyGenerationInput:
     family: str
+    config: FamilyConfig
     message_schemas: tuple[NormalizedSchema, ...]
     routes: tuple[NormalizedRoute, ...]
 
@@ -24,6 +23,10 @@ class GenerationPlan:
     shared_schemas: tuple[NormalizedSchema, ...]
     family_inputs: tuple[FamilyGenerationInput, ...]
     route_descriptors: tuple[RouteDescriptor, ...]
+
+    @property
+    def families(self) -> dict[str, FamilyGenerationInput]:
+        return {family_input.family: family_input for family_input in self.family_inputs}
 
     @property
     def map_schemas(self) -> tuple[NormalizedSchema, ...]:
@@ -42,19 +45,21 @@ class GenerationPlan:
         return self.route_descriptors_for("chat")
 
     def message_schemas_for(self, family: str) -> tuple[NormalizedSchema, ...]:
-        return self._family_input(family).message_schemas
+        family_input = self._family_input(family)
+        return family_input.message_schemas if family_input is not None else ()
 
     def routes_for(self, family: str) -> tuple[NormalizedRoute, ...]:
-        return self._family_input(family).routes
+        family_input = self._family_input(family)
+        return family_input.routes if family_input is not None else ()
 
     def route_descriptors_for(self, family: str) -> tuple[RouteDescriptor, ...]:
         return tuple(route for route in self.route_descriptors if route.family == family)
 
-    def _family_input(self, family: str) -> FamilyGenerationInput:
+    def _family_input(self, family: str) -> FamilyGenerationInput | None:
         for family_input in self.family_inputs:
             if family_input.family == family:
                 return family_input
-        return FamilyGenerationInput(family=family, message_schemas=(), routes=())
+        return None
 
 
 def repo_root() -> Path:
@@ -118,13 +123,13 @@ def _collect_reachable_shared_schemas(
     return tuple(sorted(resolved, key=lambda schema: schema.title))
 
 
-def _load_message_schemas(family: str) -> tuple[NormalizedSchema, ...]:
-    message_root = spec_root() / "messages" / family
+def _load_message_schemas(config: FamilyConfig) -> tuple[NormalizedSchema, ...]:
+    message_root = spec_root() / config.message_dir
     return tuple(load_message_schema(path) for path in sorted(message_root.glob("*.json")))
 
 
-def _load_family_routes(family: str) -> tuple[NormalizedRoute, ...]:
-    route_manifest = spec_root() / "routes" / f"{family}.routes.v1.yaml"
+def _load_family_routes(config: FamilyConfig) -> tuple[NormalizedRoute, ...]:
+    route_manifest = spec_root() / config.route_manifest
     return load_routes(route_manifest)
 
 
@@ -139,26 +144,16 @@ def _load_route_descriptors(
     return tuple(descriptors)
 
 
-def _resolve_requested_families(family: str | None) -> tuple[str, ...]:
-    if family is None:
-        return ("maps",)
-    if family not in SUPPORTED_FAMILIES:
-        supported = ", ".join(repr(item) for item in SUPPORTED_FAMILIES)
-        raise ValueError(f"Unsupported family for generation: {family!r}. Supported: {supported}")
-    if family == "chat":
-        return ("maps", "chat")
-    return (family,)
-
-
 def load_generation_plan(*, family: str | None) -> GenerationPlan:
-    requested_families = _resolve_requested_families(family)
+    requested_configs = resolve_family_configs(family)
     family_inputs = tuple(
         FamilyGenerationInput(
-            family=family_name,
-            message_schemas=_load_message_schemas(family_name),
-            routes=_load_family_routes(family_name),
+            family=config.name,
+            config=config,
+            message_schemas=_load_message_schemas(config),
+            routes=_load_family_routes(config),
         )
-        for family_name in requested_families
+        for config in requested_configs
     )
 
     all_message_schemas = tuple(

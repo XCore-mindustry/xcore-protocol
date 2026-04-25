@@ -6,12 +6,11 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .discovery import GenerationPlan, generated_java_root
+from .families import FamilyConfig, require_family_config
 from .model import FieldShape, FieldType, NormalizedField, NormalizedSchema
 from .route_descriptors import RouteDescriptor
 
 SHARED_PACKAGE = "org.xcore.protocol.generated.shared"
-MAPS_PACKAGE = "org.xcore.protocol.generated.messages.maps"
-CHAT_PACKAGE = "org.xcore.protocol.generated.messages.chat"
 ROUTES_PACKAGE = "org.xcore.protocol.generated.routes"
 
 
@@ -42,8 +41,6 @@ def check_java_outputs(plan: GenerationPlan) -> tuple[Path, ...]:
 def render_java_outputs(plan: GenerationPlan) -> tuple[GeneratedFile, ...]:
     output_root = generated_java_root()
     shared_root = output_root / "org" / "xcore" / "protocol" / "generated" / "shared"
-    maps_root = output_root / "org" / "xcore" / "protocol" / "generated" / "messages" / "maps"
-    chat_root = output_root / "org" / "xcore" / "protocol" / "generated" / "messages" / "chat"
     routes_root = output_root / "org" / "xcore" / "protocol" / "generated" / "routes"
     outputs: list[GeneratedFile] = []
 
@@ -55,49 +52,33 @@ def render_java_outputs(plan: GenerationPlan) -> tuple[GeneratedFile, ...]:
             )
         )
 
-    outputs.append(
-        GeneratedFile(
-            path=maps_root / "MapsMessages.java",
-            content=_render_family_container(
-                package_name=MAPS_PACKAGE,
-                container_name="MapsMessages",
-                schemas=plan.map_schemas,
-            ),
-        )
-    )
-
-    if plan.chat_schemas:
+    for family_input in plan.family_inputs:
+        if not family_input.message_schemas:
+            continue
+        messages_root = _java_messages_root(output_root, family_input.config)
         outputs.append(
             GeneratedFile(
-                path=chat_root / "ChatMessages.java",
+                path=messages_root / f"{family_input.config.java_messages_class}.java",
                 content=_render_family_container(
-                    package_name=CHAT_PACKAGE,
-                    container_name="ChatMessages",
-                    schemas=plan.chat_schemas,
+                    package_name=family_input.config.java_package,
+                    container_name=family_input.config.java_messages_class,
+                    schemas=family_input.message_schemas,
                 ),
             )
         )
 
-    outputs.append(
-        GeneratedFile(
-            path=routes_root / "MapsRoutes.java",
-            content=_render_family_routes(
-                class_name="MapsRoutes",
-                routes=plan.map_routes,
-                schema_family_index=_schema_family_index(plan),
-                include_maps_aliases=True,
-            ),
-        )
-    )
-
-    if plan.chat_routes:
+    for family_input in plan.family_inputs:
+        routes = plan.route_descriptors_for(family_input.family)
+        if not routes:
+            continue
         outputs.append(
             GeneratedFile(
-                path=routes_root / "ChatRoutes.java",
+                path=routes_root / f"{family_input.config.java_routes_class}.java",
                 content=_render_family_routes(
-                    class_name="ChatRoutes",
-                    routes=plan.chat_routes,
+                    class_name=family_input.config.java_routes_class,
                     schema_family_index=_schema_family_index(plan),
+                    config=family_input.config,
+                    routes=routes,
                 ),
             )
         )
@@ -111,6 +92,11 @@ def _schema_family_index(plan: GenerationPlan) -> dict[str, str]:
         for family_input in plan.family_inputs
         for schema in family_input.message_schemas
     }
+
+
+def _java_messages_root(output_root: Path, config: FamilyConfig) -> Path:
+    package_parts = config.java_package.split(".")
+    return output_root.joinpath(*package_parts)
 
 
 def _render_shared_record(schema: NormalizedSchema) -> str:
@@ -179,10 +165,10 @@ def _render_nested_message_record(schema: NormalizedSchema) -> str:
 
 def _render_family_routes(
     *,
+    config: FamilyConfig,
     class_name: str,
     routes: tuple[RouteDescriptor, ...],
     schema_family_index: dict[str, str],
-    include_maps_aliases: bool = False,
 ) -> str:
     route_imports = _render_route_imports(routes, schema_family_index)
     constants = "\n\n".join(
@@ -192,12 +178,7 @@ def _render_family_routes(
         f'            entry(key("{route.message.message_type}", {route.message.message_version}), {route.constant_name})'
         for route in routes
     )
-    maps_alias_block = ""
-    if include_maps_aliases:
-        maps_alias_block = (
-            "\n\n"
-            "    public static final Map<MessageKey, RouteDescriptor> MAPS_ROUTES_BY_MESSAGE = ROUTES_BY_MESSAGE;"
-        )
+    maps_alias_block = _render_java_route_aliases(config)
     return (
         f"package {ROUTES_PACKAGE};\n\n"
         "import static java.util.Map.entry;\n\n"
@@ -259,21 +240,31 @@ def _render_route_imports(
 
 def _message_container_import(schema_title: str, schema_family_index: dict[str, str]) -> str:
     family = schema_family_index[schema_title]
-    container_name = _family_container_name(family)
-    package_name = _family_package(family)
+    config = _family_config_for_name(family)
+    container_name = config.java_messages_class
+    package_name = config.java_package
     return f"import {package_name}.{container_name};"
 
 
 def _family_container_name(family: str) -> str:
-    return f"{family.title()}Messages"
+    return _family_config_for_name(family).java_messages_class
 
 
 def _family_package(family: str) -> str:
-    if family == "maps":
-        return MAPS_PACKAGE
-    if family == "chat":
-        return CHAT_PACKAGE
-    raise ValueError(f"Unsupported family for Java package generation: {family}")
+    return _family_config_for_name(family).java_package
+
+
+def _family_config_for_name(family: str) -> FamilyConfig:
+    return require_family_config(family)
+
+
+def _render_java_route_aliases(config: FamilyConfig) -> str:
+    if "MAPS_ROUTES_BY_MESSAGE" not in config.route_aliases:
+        return ""
+    return (
+        "\n\n"
+        "    public static final Map<MessageKey, RouteDescriptor> MAPS_ROUTES_BY_MESSAGE = ROUTES_BY_MESSAGE;"
+    )
 
 
 def _render_route_constant(
