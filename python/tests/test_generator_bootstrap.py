@@ -20,6 +20,16 @@ def test_generator_cli_accepts_maps_generate_command() -> None:
     assert exit_code == 0
 
 
+def test_generator_cli_accepts_chat_generate_command() -> None:
+    exit_code = main(["generate", "--language", "all", "--family", "chat"])
+    assert exit_code == 0
+
+
+def test_generator_cli_inspect_supports_chat_family() -> None:
+    exit_code = main(["inspect", "--family", "chat"])
+    assert exit_code == 0
+
+
 def test_generator_cli_rejects_unsupported_family() -> None:
     try:
         main(["inspect", "--family", "moderation"])

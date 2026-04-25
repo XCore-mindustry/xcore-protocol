@@ -11,6 +11,7 @@ def run_step(repo_root: Path, *args: str) -> None:
 def main() -> int:
     repo_root = Path(__file__).resolve().parents[1]
     run_step(repo_root, "uv", "run", "pytest", "python/tests/test_generated_maps_models.py")
+    run_step(repo_root, "uv", "run", "pytest", "python/tests/test_generated_chat_models.py")
     return 0
 
 

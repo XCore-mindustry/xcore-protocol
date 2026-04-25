@@ -5,18 +5,56 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from .model import NormalizedSchema, load_message_schema, load_routes, load_shared_schema
-from .route_descriptors import RouteDescriptor, build_maps_route_descriptors
+from .model import NormalizedRoute, NormalizedSchema, load_message_schema, load_routes, load_shared_schema
+from .route_descriptors import RouteDescriptor, build_route_descriptors
 
 
-SUPPORTED_FAMILY = "maps"
+SUPPORTED_FAMILIES = ("maps", "chat")
+
+
+@dataclass(frozen=True, slots=True)
+class FamilyGenerationInput:
+    family: str
+    message_schemas: tuple[NormalizedSchema, ...]
+    routes: tuple[NormalizedRoute, ...]
 
 
 @dataclass(frozen=True, slots=True)
 class GenerationPlan:
     shared_schemas: tuple[NormalizedSchema, ...]
-    map_schemas: tuple[NormalizedSchema, ...]
-    map_routes: tuple[RouteDescriptor, ...]
+    family_inputs: tuple[FamilyGenerationInput, ...]
+    route_descriptors: tuple[RouteDescriptor, ...]
+
+    @property
+    def map_schemas(self) -> tuple[NormalizedSchema, ...]:
+        return self.message_schemas_for("maps")
+
+    @property
+    def chat_schemas(self) -> tuple[NormalizedSchema, ...]:
+        return self.message_schemas_for("chat")
+
+    @property
+    def map_routes(self) -> tuple[RouteDescriptor, ...]:
+        return self.route_descriptors_for("maps")
+
+    @property
+    def chat_routes(self) -> tuple[RouteDescriptor, ...]:
+        return self.route_descriptors_for("chat")
+
+    def message_schemas_for(self, family: str) -> tuple[NormalizedSchema, ...]:
+        return self._family_input(family).message_schemas
+
+    def routes_for(self, family: str) -> tuple[NormalizedRoute, ...]:
+        return self._family_input(family).routes
+
+    def route_descriptors_for(self, family: str) -> tuple[RouteDescriptor, ...]:
+        return tuple(route for route in self.route_descriptors if route.family == family)
+
+    def _family_input(self, family: str) -> FamilyGenerationInput:
+        for family_input in self.family_inputs:
+            if family_input.family == family:
+                return family_input
+        return FamilyGenerationInput(family=family, message_schemas=(), routes=())
 
 
 def repo_root() -> Path:
@@ -47,13 +85,13 @@ def _shared_schema_index(
 
 
 def _collect_reachable_shared_schemas(
-    map_schemas: tuple[NormalizedSchema, ...],
+    message_schemas: tuple[NormalizedSchema, ...],
     shared_schemas: tuple[NormalizedSchema, ...],
 ) -> tuple[NormalizedSchema, ...]:
     shared_index = _shared_schema_index(shared_schemas)
     queue = [
         field.ref_target.ref
-        for schema in map_schemas
+        for schema in message_schemas
         for field in schema.fields
         if field.ref_target is not None
     ]
@@ -80,28 +118,57 @@ def _collect_reachable_shared_schemas(
     return tuple(sorted(resolved, key=lambda schema: schema.title))
 
 
-def _load_map_schemas() -> tuple[NormalizedSchema, ...]:
-    maps_root = spec_root() / "messages" / SUPPORTED_FAMILY
-    return tuple(load_message_schema(path) for path in sorted(maps_root.glob("*.json")))
+def _load_message_schemas(family: str) -> tuple[NormalizedSchema, ...]:
+    message_root = spec_root() / "messages" / family
+    return tuple(load_message_schema(path) for path in sorted(message_root.glob("*.json")))
 
 
-def _load_map_routes(map_schemas: tuple[NormalizedSchema, ...]) -> tuple[RouteDescriptor, ...]:
-    route_manifest = spec_root() / "routes" / "maps.routes.v1.yaml"
-    return build_maps_route_descriptors(load_routes(route_manifest), map_schemas)
+def _load_family_routes(family: str) -> tuple[NormalizedRoute, ...]:
+    route_manifest = spec_root() / "routes" / f"{family}.routes.v1.yaml"
+    return load_routes(route_manifest)
+
+
+def _load_route_descriptors(
+    family_inputs: tuple[FamilyGenerationInput, ...],
+) -> tuple[RouteDescriptor, ...]:
+    descriptors: list[RouteDescriptor] = []
+    for family_input in family_inputs:
+        if not family_input.message_schemas:
+            continue
+        descriptors.extend(build_route_descriptors(family_input.routes, family_input.message_schemas))
+    return tuple(descriptors)
+
+
+def _resolve_requested_families(family: str | None) -> tuple[str, ...]:
+    if family is None:
+        return ("maps",)
+    if family not in SUPPORTED_FAMILIES:
+        supported = ", ".join(repr(item) for item in SUPPORTED_FAMILIES)
+        raise ValueError(f"Unsupported family for generation: {family!r}. Supported: {supported}")
+    if family == "chat":
+        return ("maps", "chat")
+    return (family,)
 
 
 def load_generation_plan(*, family: str | None) -> GenerationPlan:
-    if family is not None and family != SUPPORTED_FAMILY:
-        raise ValueError(
-            f"Unsupported family for generation: {family!r}. Supported: {SUPPORTED_FAMILY!r}"
+    requested_families = _resolve_requested_families(family)
+    family_inputs = tuple(
+        FamilyGenerationInput(
+            family=family_name,
+            message_schemas=_load_message_schemas(family_name),
+            routes=_load_family_routes(family_name),
         )
+        for family_name in requested_families
+    )
 
-    map_schemas = _load_map_schemas()
-    shared_schemas = _collect_reachable_shared_schemas(map_schemas, _load_shared_schemas())
+    all_message_schemas = tuple(
+        schema for family_input in family_inputs for schema in family_input.message_schemas
+    )
+    shared_schemas = _collect_reachable_shared_schemas(all_message_schemas, _load_shared_schemas())
     return GenerationPlan(
         shared_schemas=shared_schemas,
-        map_schemas=map_schemas,
-        map_routes=_load_map_routes(map_schemas),
+        family_inputs=family_inputs,
+        route_descriptors=_load_route_descriptors(family_inputs),
     )
 
 

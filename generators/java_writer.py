@@ -11,6 +11,7 @@ from .route_descriptors import RouteDescriptor
 
 SHARED_PACKAGE = "org.xcore.protocol.generated.shared"
 MAPS_PACKAGE = "org.xcore.protocol.generated.messages.maps"
+CHAT_PACKAGE = "org.xcore.protocol.generated.messages.chat"
 ROUTES_PACKAGE = "org.xcore.protocol.generated.routes"
 
 
@@ -42,6 +43,7 @@ def render_java_outputs(plan: GenerationPlan) -> tuple[GeneratedFile, ...]:
     output_root = generated_java_root()
     shared_root = output_root / "org" / "xcore" / "protocol" / "generated" / "shared"
     maps_root = output_root / "org" / "xcore" / "protocol" / "generated" / "messages" / "maps"
+    chat_root = output_root / "org" / "xcore" / "protocol" / "generated" / "messages" / "chat"
     routes_root = output_root / "org" / "xcore" / "protocol" / "generated" / "routes"
     outputs: list[GeneratedFile] = []
 
@@ -56,18 +58,59 @@ def render_java_outputs(plan: GenerationPlan) -> tuple[GeneratedFile, ...]:
     outputs.append(
         GeneratedFile(
             path=maps_root / "MapsMessages.java",
-            content=_render_maps_container(plan.map_schemas),
+            content=_render_family_container(
+                package_name=MAPS_PACKAGE,
+                container_name="MapsMessages",
+                schemas=plan.map_schemas,
+            ),
         )
     )
+
+    if plan.chat_schemas:
+        outputs.append(
+            GeneratedFile(
+                path=chat_root / "ChatMessages.java",
+                content=_render_family_container(
+                    package_name=CHAT_PACKAGE,
+                    container_name="ChatMessages",
+                    schemas=plan.chat_schemas,
+                ),
+            )
+        )
 
     outputs.append(
         GeneratedFile(
             path=routes_root / "MapsRoutes.java",
-            content=_render_maps_routes(plan.map_routes),
+            content=_render_family_routes(
+                class_name="MapsRoutes",
+                routes=plan.map_routes,
+                schema_family_index=_schema_family_index(plan),
+                include_maps_aliases=True,
+            ),
         )
     )
 
+    if plan.chat_routes:
+        outputs.append(
+            GeneratedFile(
+                path=routes_root / "ChatRoutes.java",
+                content=_render_family_routes(
+                    class_name="ChatRoutes",
+                    routes=plan.chat_routes,
+                    schema_family_index=_schema_family_index(plan),
+                ),
+            )
+        )
+
     return tuple(outputs)
+
+
+def _schema_family_index(plan: GenerationPlan) -> dict[str, str]:
+    return {
+        schema.title: family_input.family
+        for family_input in plan.family_inputs
+        for schema in family_input.message_schemas
+    }
 
 
 def _render_shared_record(schema: NormalizedSchema) -> str:
@@ -83,21 +126,37 @@ def _render_shared_record(schema: NormalizedSchema) -> str:
     )
 
 
-def _render_maps_container(map_schemas: tuple[NormalizedSchema, ...]) -> str:
-    nested_records = "\n\n".join(_render_nested_message_record(schema) for schema in map_schemas)
+def _render_family_container(
+    *,
+    package_name: str,
+    container_name: str,
+    schemas: tuple[NormalizedSchema, ...],
+) -> str:
+    nested_records = "\n\n".join(_render_nested_message_record(schema) for schema in schemas)
+    imports = _render_family_imports(schemas)
     return (
-        f"package {MAPS_PACKAGE};\n\n"
-        "import java.util.List;\n"
-        "import java.util.Objects;\n"
-        "import org.xcore.protocol.generated.shared.MapEntryV1;\n"
-        "import org.xcore.protocol.generated.shared.MapFileSourceV1;\n\n"
-        "public final class MapsMessages {\n"
-        "    private MapsMessages() {\n"
-        '        throw new AssertionError("No org.xcore.protocol.generated.messages.maps.MapsMessages instances");\n'
+        f"package {package_name};\n\n"
+        + imports
+        + f"public final class {container_name} {{\n"
+        + f"    private {container_name}() {{\n"
+        + f'        throw new AssertionError("No {package_name}.{container_name} instances");\n'
         "    }\n\n"
-        f"{nested_records}\n"
+        + f"{nested_records}\n"
         "}\n"
     )
+
+
+def _render_family_imports(schemas: tuple[NormalizedSchema, ...]) -> str:
+    imports = {"import java.util.Objects;"}
+    if any(field.shape == FieldShape.ARRAY for schema in schemas for field in schema.fields if field.const is None):
+        imports.add("import java.util.List;")
+    imports.update(
+        f"import {SHARED_PACKAGE}.{field.ref_target.title};"
+        for schema in schemas
+        for field in schema.fields
+        if field.const is None and field.ref_target is not None
+    )
+    return "\n".join(sorted(imports)) + "\n\n"
 
 
 def _render_nested_message_record(schema: NormalizedSchema) -> str:
@@ -118,20 +177,36 @@ def _render_nested_message_record(schema: NormalizedSchema) -> str:
     )
 
 
-def _render_maps_routes(routes: tuple[RouteDescriptor, ...]) -> str:
-    constants = "\n\n".join(_render_route_constant(route) for route in routes)
-    index_entries = "\n".join(
+def _render_family_routes(
+    *,
+    class_name: str,
+    routes: tuple[RouteDescriptor, ...],
+    schema_family_index: dict[str, str],
+    include_maps_aliases: bool = False,
+) -> str:
+    route_imports = _render_route_imports(routes, schema_family_index)
+    constants = "\n\n".join(
+        _render_route_constant(route, schema_family_index=schema_family_index) for route in routes
+    )
+    index_entries = ",\n".join(
         f'            entry(key("{route.message.message_type}", {route.message.message_version}), {route.constant_name})'
         for route in routes
     )
+    maps_alias_block = ""
+    if include_maps_aliases:
+        maps_alias_block = (
+            "\n\n"
+            "    public static final Map<MessageKey, RouteDescriptor> MAPS_ROUTES_BY_MESSAGE = ROUTES_BY_MESSAGE;"
+        )
     return (
         f"package {ROUTES_PACKAGE};\n\n"
         "import static java.util.Map.entry;\n\n"
         "import java.util.Map;\n"
-        "import org.xcore.protocol.generated.messages.maps.MapsMessages;\n\n"
-        "public final class MapsRoutes {\n"
-        "    private MapsRoutes() {\n"
-        '        throw new AssertionError("No org.xcore.protocol.generated.routes.MapsRoutes instances");\n'
+        + route_imports
+        + "\n"
+        + f"public final class {class_name} {{\n"
+        + f"    private {class_name}() {{\n"
+        + f'        throw new AssertionError("No org.xcore.protocol.generated.routes.{class_name} instances");\n'
         "    }\n\n"
         "    public record MessageKey(String messageType, int messageVersion) {}\n\n"
         "    public record RouteResponseDescriptor(\n"
@@ -156,9 +231,11 @@ def _render_maps_routes(routes: tuple[RouteDescriptor, ...]) -> str:
         "            RouteResponseDescriptor response\n"
         "    ) {}\n\n"
         + constants
-        + "\n\n    public static final Map<MessageKey, RouteDescriptor> MAPS_ROUTES_BY_MESSAGE = Map.ofEntries(\n"
+        + "\n\n    public static final Map<MessageKey, RouteDescriptor> ROUTES_BY_MESSAGE = Map.ofEntries(\n"
         + index_entries
-        + "\n    );\n\n"
+        + "\n    );"
+        + maps_alias_block
+        + "\n\n"
         "    private static MessageKey key(String messageType, int messageVersion) {\n"
         "        return new MessageKey(messageType, messageVersion);\n"
         "    }\n"
@@ -166,16 +243,54 @@ def _render_maps_routes(routes: tuple[RouteDescriptor, ...]) -> str:
     )
 
 
-def _render_route_constant(route: RouteDescriptor) -> str:
+def _render_route_imports(
+    routes: tuple[RouteDescriptor, ...],
+    schema_family_index: dict[str, str],
+) -> str:
+    imports = set()
+    for route in routes:
+        imports.add(_message_container_import(route.message.schema_title, schema_family_index))
+        if route.response is not None:
+            imports.add(_message_container_import(route.response.message.schema_title, schema_family_index))
+    if not imports:
+        return ""
+    return "\n".join(sorted(imports)) + "\n"
+
+
+def _message_container_import(schema_title: str, schema_family_index: dict[str, str]) -> str:
+    family = schema_family_index[schema_title]
+    container_name = _family_container_name(family)
+    package_name = _family_package(family)
+    return f"import {package_name}.{container_name};"
+
+
+def _family_container_name(family: str) -> str:
+    return f"{family.title()}Messages"
+
+
+def _family_package(family: str) -> str:
+    if family == "maps":
+        return MAPS_PACKAGE
+    if family == "chat":
+        return CHAT_PACKAGE
+    raise ValueError(f"Unsupported family for Java package generation: {family}")
+
+
+def _render_route_constant(
+    route: RouteDescriptor,
+    *,
+    schema_family_index: dict[str, str],
+) -> str:
     response = "null"
     if route.response is not None:
+        response_family = schema_family_index[route.response.message.schema_title]
         response = (
             "new RouteResponseDescriptor(\n"
-            f'            "{route.response.message.message_type}",\n'
-            f"            {route.response.message.message_version},\n"
-            f"            MapsMessages.{route.response.message.schema_title}.class,\n"
-            f'            "{route.response.stream}"\n'
-            "    )"
+            f'                    "{route.response.message.message_type}",\n'
+            f"                    {route.response.message.message_version},\n"
+            f"                    {_message_payload_type(route.response.message.schema_title, response_family)}.class,\n"
+            f'                    "{route.response.stream}"\n'
+            "            )"
         )
     return (
         f"    public static final RouteDescriptor {route.constant_name} = new RouteDescriptor(\n"
@@ -183,7 +298,7 @@ def _render_route_constant(route: RouteDescriptor) -> str:
         f'            "{route.method_name}",\n'
         f'            "{route.message.message_type}",\n'
         f"            {route.message.message_version},\n"
-        f"            MapsMessages.{route.message.schema_title}.class,\n"
+        f"            {_message_payload_type(route.message.schema_title, route.family)}.class,\n"
         f'            "{route.kind}",\n'
         f'            "{route.stream}",\n'
         f'            "{route.target_scope}",\n'
@@ -194,6 +309,10 @@ def _render_route_constant(route: RouteDescriptor) -> str:
         f"            {response}\n"
         "    );"
     )
+
+
+def _message_payload_type(schema_title: str, family: str) -> str:
+    return f"{_family_container_name(family)}.{schema_title}"
 
 
 def _render_compact_constructor(schema: NormalizedSchema, *, indent: str) -> str:

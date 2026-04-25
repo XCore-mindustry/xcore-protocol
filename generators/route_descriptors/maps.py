@@ -1,9 +1,10 @@
-"""Build strict maps route descriptors from canonical route manifests."""
+"""Build strict route descriptors from canonical route manifests."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
+from ..naming import message_type_constant_name
 from ..model import NormalizedRoute, NormalizedSchema
 
 
@@ -36,14 +37,13 @@ class RouteDescriptor:
     response: RouteResponseDescriptor | None = None
 
 
-def build_maps_route_descriptors(
+def build_route_descriptors(
     routes: tuple[NormalizedRoute, ...],
-    map_schemas: tuple[NormalizedSchema, ...],
+    message_schemas: tuple[NormalizedSchema, ...],
 ) -> tuple[RouteDescriptor, ...]:
-    schema_index = _build_schema_index(map_schemas)
+    schema_index = _build_schema_index(message_schemas)
     descriptors: list[RouteDescriptor] = []
     for route in routes:
-        _ensure_maps_route(route)
         message = _message_descriptor(
             schema_index=schema_index,
             message_type=route.message_type,
@@ -78,21 +78,23 @@ def build_maps_route_descriptors(
     return tuple(descriptors)
 
 
-def _build_schema_index(
+def build_maps_route_descriptors(
+    routes: tuple[NormalizedRoute, ...],
     map_schemas: tuple[NormalizedSchema, ...],
+) -> tuple[RouteDescriptor, ...]:
+    return build_route_descriptors(routes, map_schemas)
+
+
+def _build_schema_index(
+    message_schemas: tuple[NormalizedSchema, ...],
 ) -> dict[tuple[str, int], NormalizedSchema]:
     index: dict[tuple[str, int], NormalizedSchema] = {}
-    for schema in map_schemas:
+    for schema in message_schemas:
         if schema.message_type is None or schema.message_version is None:
-            raise ValueError(f"Map schema is missing canonical identity: {schema.title}")
+            raise ValueError(f"Message schema is missing canonical identity: {schema.title}")
         key = (schema.message_type, schema.message_version)
         index[key] = schema
     return index
-
-
-def _ensure_maps_route(route: NormalizedRoute) -> None:
-    if route.family != "maps":
-        raise ValueError(f"Only maps routes are supported, got family={route.family!r}")
 
 
 def _message_descriptor(
@@ -115,7 +117,7 @@ def _message_descriptor(
 
 
 def _constant_name(message: MessageDescriptor) -> str:
-    return f"{message.message_type.replace('.', '_').upper()}_V{message.message_version}"
+    return message_type_constant_name(message.message_type, message.message_version)
 
 
 def _method_name(message: MessageDescriptor) -> str:

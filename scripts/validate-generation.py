@@ -11,8 +11,8 @@ def run_step(repo_root: Path, *args: str) -> None:
 
 def main() -> int:
     repo_root = Path(__file__).resolve().parents[1]
-    run_step(repo_root, "uv", "run", "python", "-m", "generators", "generate", "--family", "maps")
-    run_step(repo_root, "uv", "run", "python", "-m", "generators", "check", "--family", "maps")
+    run_step(repo_root, "uv", "run", "python", "-m", "generators", "generate", "--family", "chat")
+    run_step(repo_root, "uv", "run", "python", "-m", "generators", "check", "--family", "chat")
     return 0
 
 

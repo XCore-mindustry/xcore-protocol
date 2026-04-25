@@ -86,13 +86,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
     if args.command == "inspect":
         plan = load_generation_plan(family=args.family)
+        requested_family = args.family or "maps"
         print(
             "shared="
             + ", ".join(schema.title for schema in plan.shared_schemas)
             + "\nmessages="
-            + ", ".join(schema.title for schema in plan.map_schemas)
+            + ", ".join(schema.title for schema in plan.message_schemas_for(requested_family))
             + "\nroutes="
-            + ", ".join(route.constant_name for route in plan.map_routes)
+            + ", ".join(route.message_type for route in plan.routes_for(requested_family))
         )
         return 0
 

@@ -49,11 +49,11 @@ public final class MapsRoutes {
             false,
             "maps",
             new RouteResponseDescriptor(
-            "maps.list.response",
-            1,
-            MapsMessages.MapsListResponseV1.class,
-            "xcore:rpc:resp:{requester}"
-    )
+                    "maps.list.response",
+                    1,
+                    MapsMessages.MapsListResponseV1.class,
+                    "xcore:rpc:resp:{requester}"
+            )
     );
 
     public static final RouteDescriptor MAPS_REMOVE_REQUEST_V1 = new RouteDescriptor(
@@ -70,11 +70,11 @@ public final class MapsRoutes {
             true,
             "maps",
             new RouteResponseDescriptor(
-            "maps.remove.response",
-            1,
-            MapsMessages.MapsRemoveResponseV1.class,
-            "xcore:rpc:resp:{requester}"
-    )
+                    "maps.remove.response",
+                    1,
+                    MapsMessages.MapsRemoveResponseV1.class,
+                    "xcore:rpc:resp:{requester}"
+            )
     );
 
     public static final RouteDescriptor MAPS_LOAD_COMMAND_V1 = new RouteDescriptor(
@@ -93,11 +93,13 @@ public final class MapsRoutes {
             null
     );
 
-    public static final Map<MessageKey, RouteDescriptor> MAPS_ROUTES_BY_MESSAGE = Map.ofEntries(
-            entry(key("maps.list.request", 1), MAPS_LIST_REQUEST_V1)
-            entry(key("maps.remove.request", 1), MAPS_REMOVE_REQUEST_V1)
+    public static final Map<MessageKey, RouteDescriptor> ROUTES_BY_MESSAGE = Map.ofEntries(
+            entry(key("maps.list.request", 1), MAPS_LIST_REQUEST_V1),
+            entry(key("maps.remove.request", 1), MAPS_REMOVE_REQUEST_V1),
             entry(key("maps.load.command", 1), MAPS_LOAD_COMMAND_V1)
     );
+
+    public static final Map<MessageKey, RouteDescriptor> MAPS_ROUTES_BY_MESSAGE = ROUTES_BY_MESSAGE;
 
     private static MessageKey key(String messageType, int messageVersion) {
         return new MessageKey(messageType, messageVersion);
