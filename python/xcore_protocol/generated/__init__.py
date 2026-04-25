@@ -15,6 +15,12 @@ from .chat import (
     ServerActionV1,
     ServerHeartbeatV1,
 )
+from .discord import (
+    DiscordAdminAccessChangedCommandV1,
+    DiscordLinkConfirmCommandV1,
+    DiscordLinkStatusChangedV1,
+    DiscordUnlinkCommandV1,
+)
 from .routes import (
     MAPS_LIST_REQUEST_V1,
     MAPS_REMOVE_REQUEST_V1,
@@ -25,6 +31,10 @@ from .routes import (
     SERVER_ACTION_V1,
     PLAYER_JOIN_LEAVE_V1,
     SERVER_HEARTBEAT_V1,
+    DISCORD_LINK_CONFIRM_COMMAND_V1,
+    DISCORD_UNLINK_COMMAND_V1,
+    DISCORD_LINK_STATUS_CHANGED_V1,
+    DISCORD_ADMIN_ACCESS_CHANGED_COMMAND_V1,
     RouteDescriptor,
     RouteResponseDescriptor,
     ROUTES_BY_MESSAGE,
@@ -33,13 +43,17 @@ from .routes import (
     MAPS_ROUTES_BY_MESSAGE,
 )
 from .shared import (
+    DiscordIdentityRefV1,
     MapEntryV1,
     MapFileSourceV1,
+    PlayerRefV1,
 )
 
 __all__ = [
+    "DiscordIdentityRefV1",
     "MapEntryV1",
     "MapFileSourceV1",
+    "PlayerRefV1",
     "MapsListRequestV1",
     "MapsListResponseV1",
     "MapsLoadCommandV1",
@@ -51,6 +65,10 @@ __all__ = [
     "PlayerJoinLeaveV1",
     "ServerActionV1",
     "ServerHeartbeatV1",
+    "DiscordAdminAccessChangedCommandV1",
+    "DiscordLinkConfirmCommandV1",
+    "DiscordLinkStatusChangedV1",
+    "DiscordUnlinkCommandV1",
     "MAPS_LIST_REQUEST_V1",
     "MAPS_REMOVE_REQUEST_V1",
     "MAPS_LOAD_COMMAND_V1",
@@ -60,6 +78,10 @@ __all__ = [
     "SERVER_ACTION_V1",
     "PLAYER_JOIN_LEAVE_V1",
     "SERVER_HEARTBEAT_V1",
+    "DISCORD_LINK_CONFIRM_COMMAND_V1",
+    "DISCORD_UNLINK_COMMAND_V1",
+    "DISCORD_LINK_STATUS_CHANGED_V1",
+    "DISCORD_ADMIN_ACCESS_CHANGED_COMMAND_V1",
     "RouteDescriptor",
     "RouteResponseDescriptor",
     "ROUTES_BY_MESSAGE",

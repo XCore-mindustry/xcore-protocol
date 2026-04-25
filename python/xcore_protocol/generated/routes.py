@@ -22,6 +22,13 @@ from .chat import (
     ServerHeartbeatV1,
 )
 
+from .discord import (
+    DiscordLinkConfirmCommandV1,
+    DiscordUnlinkCommandV1,
+    DiscordLinkStatusChangedV1,
+    DiscordAdminAccessChangedCommandV1,
+)
+
 @dataclass(frozen=True, slots=True)
 class RouteResponseDescriptor:
     messageType: str
@@ -200,6 +207,70 @@ SERVER_HEARTBEAT_V1 = RouteDescriptor(
     response=None,
 )
 
+DISCORD_LINK_CONFIRM_COMMAND_V1 = RouteDescriptor(
+    family='discord',
+    methodName='discordLinkConfirmCommandV1Route',
+    messageType='discord.link.confirm.command',
+    messageVersion=1,
+    payloadType=DiscordLinkConfirmCommandV1,
+    kind='command',
+    stream='xcore:cmd:discord-link-confirm:{server}',
+    targetScope='server',
+    ttlMs=120000,
+    replayable=False,
+    idempotentConsumerRecommended=True,
+    owner='discord-linking',
+    response=None,
+)
+
+DISCORD_UNLINK_COMMAND_V1 = RouteDescriptor(
+    family='discord',
+    methodName='discordUnlinkCommandV1Route',
+    messageType='discord.unlink.command',
+    messageVersion=1,
+    payloadType=DiscordUnlinkCommandV1,
+    kind='command',
+    stream='xcore:cmd:discord-unlink:{server}',
+    targetScope='server',
+    ttlMs=120000,
+    replayable=False,
+    idempotentConsumerRecommended=True,
+    owner='discord-linking',
+    response=None,
+)
+
+DISCORD_LINK_STATUS_CHANGED_V1 = RouteDescriptor(
+    family='discord',
+    methodName='discordLinkStatusChangedV1Route',
+    messageType='discord.link.status-changed',
+    messageVersion=1,
+    payloadType=DiscordLinkStatusChangedV1,
+    kind='event',
+    stream='xcore:evt:discord:link-status',
+    targetScope='broadcast',
+    ttlMs=120000,
+    replayable=True,
+    idempotentConsumerRecommended=True,
+    owner='discord-linking',
+    response=None,
+)
+
+DISCORD_ADMIN_ACCESS_CHANGED_COMMAND_V1 = RouteDescriptor(
+    family='discord',
+    methodName='discordAdminAccessChangedCommandV1Route',
+    messageType='discord.admin-access.changed.command',
+    messageVersion=1,
+    payloadType=DiscordAdminAccessChangedCommandV1,
+    kind='command',
+    stream='xcore:cmd:discord-admin-access:{server}',
+    targetScope='server',
+    ttlMs=120000,
+    replayable=False,
+    idempotentConsumerRecommended=True,
+    owner='discord-admin-access',
+    response=None,
+)
+
 ROUTES_BY_MESSAGE: dict[tuple[str, int], RouteDescriptor] = {
     ('maps.list.request', 1): MAPS_LIST_REQUEST_V1,
     ('maps.remove.request', 1): MAPS_REMOVE_REQUEST_V1,
@@ -210,6 +281,10 @@ ROUTES_BY_MESSAGE: dict[tuple[str, int], RouteDescriptor] = {
     ('server.action', 1): SERVER_ACTION_V1,
     ('player.join-leave', 1): PLAYER_JOIN_LEAVE_V1,
     ('server.heartbeat', 1): SERVER_HEARTBEAT_V1,
+    ('discord.link.confirm.command', 1): DISCORD_LINK_CONFIRM_COMMAND_V1,
+    ('discord.unlink.command', 1): DISCORD_UNLINK_COMMAND_V1,
+    ('discord.link.status-changed', 1): DISCORD_LINK_STATUS_CHANGED_V1,
+    ('discord.admin-access.changed.command', 1): DISCORD_ADMIN_ACCESS_CHANGED_COMMAND_V1,
 }
 
 MapsRouteResponseDescriptor = RouteResponseDescriptor
@@ -226,6 +301,10 @@ __all__ = [
     "SERVER_ACTION_V1",
     "PLAYER_JOIN_LEAVE_V1",
     "SERVER_HEARTBEAT_V1",
+    "DISCORD_LINK_CONFIRM_COMMAND_V1",
+    "DISCORD_UNLINK_COMMAND_V1",
+    "DISCORD_LINK_STATUS_CHANGED_V1",
+    "DISCORD_ADMIN_ACCESS_CHANGED_COMMAND_V1",
     "RouteDescriptor",
     "RouteResponseDescriptor",
     "ROUTES_BY_MESSAGE",

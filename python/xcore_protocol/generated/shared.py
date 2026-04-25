@@ -66,6 +66,37 @@ def _expect_instance(value: Any, field_name: str, expected_type: type[Any]) -> N
         raise TypeError(f"{field_name} must be a {expected_type.__name__}")
 
 @dataclass(frozen=True, slots=True)
+class DiscordIdentityRefV1:
+    discordId: str
+    discordUsername: str | None = None
+
+    def __post_init__(self) -> None:
+        _expect_str(self.discordId, 'discordId')
+        if self.discordUsername is not None:
+            _expect_str(self.discordUsername, 'discordUsername')
+
+    @classmethod
+    def from_payload(cls, payload: Mapping[str, Any]) -> "DiscordIdentityRefV1":
+        mapping = _expect_mapping(payload, "DiscordIdentityRefV1")
+        _expect_exact_keys(
+            mapping,
+            required=frozenset(('discordId',)),
+            allowed=frozenset(('discordId', 'discordUsername')),
+            model_name="DiscordIdentityRefV1",
+        )
+        return cls(
+            discordId=_expect_str(mapping['discordId'], 'discordId'),
+            discordUsername=(_expect_str(mapping['discordUsername'], 'discordUsername') if 'discordUsername' in mapping else None),
+        )
+
+    def to_payload(self) -> dict[str, Any]:
+        payload: dict[str, Any] = {}
+        payload['discordId'] = self.discordId
+        if self.discordUsername is not None:
+            payload['discordUsername'] = self.discordUsername
+        return payload
+
+@dataclass(frozen=True, slots=True)
 class MapEntryV1:
     name: str
     fileName: str
@@ -181,7 +212,50 @@ class MapFileSourceV1:
         payload['filename'] = self.filename
         return payload
 
+@dataclass(frozen=True, slots=True)
+class PlayerRefV1:
+    playerUuid: str
+    playerName: str
+    playerPid: int | None = None
+    ip: str | None = None
+
+    def __post_init__(self) -> None:
+        _expect_str(self.playerUuid, 'playerUuid')
+        if self.playerPid is not None:
+            _expect_int(self.playerPid, 'playerPid')
+        _expect_str(self.playerName, 'playerName')
+        if self.ip is not None:
+            _expect_str(self.ip, 'ip')
+
+    @classmethod
+    def from_payload(cls, payload: Mapping[str, Any]) -> "PlayerRefV1":
+        mapping = _expect_mapping(payload, "PlayerRefV1")
+        _expect_exact_keys(
+            mapping,
+            required=frozenset(('playerUuid', 'playerName')),
+            allowed=frozenset(('playerUuid', 'playerPid', 'playerName', 'ip')),
+            model_name="PlayerRefV1",
+        )
+        return cls(
+            playerUuid=_expect_str(mapping['playerUuid'], 'playerUuid'),
+            playerPid=(_expect_int(mapping['playerPid'], 'playerPid') if 'playerPid' in mapping else None),
+            playerName=_expect_str(mapping['playerName'], 'playerName'),
+            ip=(_expect_str(mapping['ip'], 'ip') if 'ip' in mapping else None),
+        )
+
+    def to_payload(self) -> dict[str, Any]:
+        payload: dict[str, Any] = {}
+        payload['playerUuid'] = self.playerUuid
+        if self.playerPid is not None:
+            payload['playerPid'] = self.playerPid
+        payload['playerName'] = self.playerName
+        if self.ip is not None:
+            payload['ip'] = self.ip
+        return payload
+
 __all__ = [
+    "DiscordIdentityRefV1",
     "MapEntryV1",
     "MapFileSourceV1",
+    "PlayerRefV1",
 ]

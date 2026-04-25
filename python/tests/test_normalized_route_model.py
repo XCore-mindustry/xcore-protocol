@@ -116,6 +116,33 @@ def test_generation_plan_keeps_family_inputs_separate() -> None:
     assert plan.family_inputs[1].routes == plan.routes_for("chat")
 
 
+def test_generation_plan_supports_discord_family_with_nested_shared_refs() -> None:
+    plan = load_generation_plan(family="discord")
+
+    assert [schema.title for schema in plan.shared_schemas] == [
+        "DiscordIdentityRefV1",
+        "PlayerRefV1",
+    ]
+    assert [schema.title for schema in plan.discord_schemas] == [
+        "DiscordAdminAccessChangedCommandV1",
+        "DiscordLinkConfirmCommandV1",
+        "DiscordLinkStatusChangedV1",
+        "DiscordUnlinkCommandV1",
+    ]
+    assert [route.message_type for route in plan.routes_for("discord")] == [
+        "discord.link.confirm.command",
+        "discord.unlink.command",
+        "discord.link.status-changed",
+        "discord.admin-access.changed.command",
+    ]
+    assert [route.constant_name for route in plan.discord_routes] == [
+        "DISCORD_LINK_CONFIRM_COMMAND_V1",
+        "DISCORD_UNLINK_COMMAND_V1",
+        "DISCORD_LINK_STATUS_CHANGED_V1",
+        "DISCORD_ADMIN_ACCESS_CHANGED_COMMAND_V1",
+    ]
+
+
 def test_message_type_constant_name_normalizes_hyphenated_identifiers() -> None:
     assert message_type_constant_name("chat.discord-ingress.command", 1) == "CHAT_DISCORD_INGRESS_COMMAND_V1"
     assert message_type_constant_name("player.join-leave", 1) == "PLAYER_JOIN_LEAVE_V1"

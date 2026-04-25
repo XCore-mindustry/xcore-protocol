@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from .discovery import GenerationPlan, generated_python_root
+from .discovery import GenerationPlan, generated_python_root, load_aggregate_generation_plan
 from .families import FamilyConfig, require_family_config
 from .model import FieldShape, FieldType, NormalizedField, NormalizedSchema
 from .route_descriptors import RouteDescriptor
@@ -37,7 +37,13 @@ def check_python_outputs(plan: GenerationPlan) -> tuple[Path, ...]:
 
 def render_python_outputs(plan: GenerationPlan) -> tuple[GeneratedFile, ...]:
     output_root = generated_python_root()
-    outputs = [GeneratedFile(path=output_root / "shared.py", content=_render_shared_module(plan.shared_schemas))]
+    aggregate_plan = load_aggregate_generation_plan()
+    outputs = [
+        GeneratedFile(
+            path=output_root / "shared.py",
+            content=_render_shared_module(aggregate_plan.shared_schemas),
+        )
+    ]
     for family_input in plan.family_inputs:
         if not family_input.message_schemas:
             continue
@@ -51,8 +57,12 @@ def render_python_outputs(plan: GenerationPlan) -> tuple[GeneratedFile, ...]:
                 ),
             )
         )
-    outputs.append(GeneratedFile(path=output_root / "routes.py", content=_render_routes_module(plan)))
-    outputs.append(GeneratedFile(path=output_root / "__init__.py", content=_render_package_init(plan)))
+    outputs.append(
+        GeneratedFile(path=output_root / "routes.py", content=_render_routes_module(aggregate_plan))
+    )
+    outputs.append(
+        GeneratedFile(path=output_root / "__init__.py", content=_render_package_init(aggregate_plan))
+    )
     return tuple(outputs)
 
 
@@ -463,14 +473,21 @@ def _render_message_class(schema: NormalizedSchema) -> str:
 
 
 def _render_dataclass_fields(fields: tuple[NormalizedField, ...]) -> str:
+    ordered_fields = _python_dataclass_field_order(fields)
     lines: list[str] = []
-    for field in fields:
+    for field in ordered_fields:
         annotation = _annotation_for_field(field)
         if field.required:
             lines.append(f"    {field.name}: {annotation}")
         else:
             lines.append(f"    {field.name}: {annotation} = None")
     return "\n".join(lines) or "    pass"
+
+
+def _python_dataclass_field_order(fields: tuple[NormalizedField, ...]) -> tuple[NormalizedField, ...]:
+    required_fields = tuple(field for field in fields if field.required)
+    optional_fields = tuple(field for field in fields if not field.required)
+    return required_fields + optional_fields
 
 
 def _annotation_for_field(field: NormalizedField) -> str:

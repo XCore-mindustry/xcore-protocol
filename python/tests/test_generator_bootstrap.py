@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from generators.families import default_family_name, supported_family_names
 from generators.cli import build_parser, main
 from generators.discovery import load_generation_plan
+from generators.python_writer import render_python_outputs
 
 
 def test_generator_cli_exposes_expected_subcommands() -> None:
@@ -52,3 +55,29 @@ def test_generator_cli_rejects_unsupported_family() -> None:
         assert "Unsupported family" in str(error)
     else:
         raise AssertionError("Expected unsupported family to raise ValueError")
+
+
+def test_family_scoped_python_generation_keeps_aggregate_outputs_complete() -> None:
+    outputs = render_python_outputs(load_generation_plan(family="discord"))
+    output_by_name = {Path(output.path).name: output.content for output in outputs}
+
+    assert "discord.py" in output_by_name
+    assert "chat.py" not in output_by_name
+    assert "maps.py" not in output_by_name
+
+    package_init = output_by_name["__init__.py"]
+    routes_module = output_by_name["routes.py"]
+    shared_module = output_by_name["shared.py"]
+
+    assert "ChatMessageV1" in package_init
+    assert "MapsListRequestV1" in package_init
+    assert "DiscordLinkConfirmCommandV1" in package_init
+
+    assert "CHAT_MESSAGE_V1" in routes_module
+    assert "MAPS_LIST_REQUEST_V1" in routes_module
+    assert "DISCORD_LINK_CONFIRM_COMMAND_V1" in routes_module
+
+    assert "MapEntryV1" in shared_module
+    assert "MapFileSourceV1" in shared_module
+    assert "PlayerRefV1" in shared_module
+    assert "DiscordIdentityRefV1" in shared_module

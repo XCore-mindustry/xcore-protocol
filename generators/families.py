@@ -53,6 +53,15 @@ FAMILY_CONFIGS: tuple[FamilyConfig, ...] = (
         includes=("maps", "chat"),
         generated_model_test="python/tests/test_generated_chat_models.py",
     ),
+    FamilyConfig(
+        name="discord",
+        python_module="discord",
+        java_package="org.xcore.protocol.generated.messages.discord",
+        java_messages_class="DiscordMessages",
+        java_routes_class="DiscordRoutes",
+        includes=("discord",),
+        generated_model_test="python/tests/test_generated_discord_models.py",
+    ),
 )
 
 FAMILY_CONFIG_BY_NAME: dict[str, FamilyConfig] = {config.name: config for config in FAMILY_CONFIGS}
