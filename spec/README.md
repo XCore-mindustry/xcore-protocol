@@ -7,4 +7,4 @@ This directory contains the source-of-truth protocol specifications:
 - route manifests
 - AsyncAPI overview
 
-Canonical moderation specs are expected to land here first.
+These specifications are the authored inputs for generated Java/Python protocol DTO and model artifacts.

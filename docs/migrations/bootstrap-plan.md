@@ -4,11 +4,12 @@
 Bootstrap the repository structure and foundational docs.
 
 ## Next Stage
-Define moderation-first canonical schemas, fixtures, and SDK placeholders.
+Define canonical schemas/fixtures and bootstrap generator-aware Java/Python protocol model support.
 
 ## Immediate Deliverables
 - foundational docs
 - spec tree
 - fixture tree
-- Java/Python package skeletons
+- generation scaffolding/configuration
+- Java/Python package skeletons for generated artifacts and thin support code
 - compatibility test directories

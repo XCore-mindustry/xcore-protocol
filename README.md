@@ -11,7 +11,9 @@ It defines:
 - route and stream metadata
 - versioning and compatibility rules
 - canonical fixtures
-- Java and Python protocol SDKs
+- generation inputs and tooling
+- generated Java and Python protocol DTO/model artifacts
+- thin handwritten validation/runtime support around generated artifacts
 - cross-language compatibility tests
 
 ## Scope
@@ -23,7 +25,7 @@ This repository contains only **cross-process / cross-service wire protocol arti
 - route metadata
 - shared payload subtypes
 - protocol fixtures and validation helpers
-- Java and Python protocol SDKs
+- generation configuration and generated Java/Python protocol artifacts
 
 ### Out of scope
 - application business logic
@@ -34,10 +36,11 @@ This repository contains only **cross-process / cross-service wire protocol arti
 
 ## Repository Layout
 - `docs/` — ADRs, architecture notes, policies, migration notes
-- `spec/` — protocol specs, shared types, envelopes, routes
+- `spec/` — protocol specs, shared types, envelopes, routes, generation inputs
 - `fixtures/` — valid, invalid, and legacy examples
-- `java/` — Java protocol support modules
-- `python/` — Python protocol package
+- `generators/` — language generation config/templates/scripts
+- `java/` — generated Java protocol support modules and thin helpers
+- `python/` — generated Python protocol package and thin helpers
 - `compat/` — cross-language compatibility checks
 - `scripts/` — validation/generation/release helper placeholders
 
@@ -51,7 +54,7 @@ The first migration slice is the **moderation** family:
 - moderation audit appended
 
 ## Current Status
-This repository is in bootstrap state. Initial design docs and repository structure exist; canonical moderation specs and SDK implementation are the next step.
+This repository is in bootstrap state. Canonical message families exist, and the next major step is generator-aware Java/Python protocol model support so application repos can consume generated canonical artifacts instead of redefining wire DTOs.
 
 ## See Also
 - `docs/adr/ADR-001-protocol-first.md`

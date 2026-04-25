@@ -20,7 +20,9 @@ This repository owns:
 - envelope definitions
 - route metadata
 - fixtures/examples
-- protocol SDKs for Java and Python
+- generation inputs and configuration
+- generated protocol DTO/model artifacts for Java and Python
+- thin handwritten validation/runtime support around generated artifacts
 - compatibility tests
 
 This repository does not own application runtime or business logic.
