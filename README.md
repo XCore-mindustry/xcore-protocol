@@ -54,7 +54,7 @@ The first migration slice is the **moderation** family:
 - moderation audit appended
 
 ## Current Status
-This repository is in bootstrap state. Canonical message families exist, and the next major step is generator-aware Java/Python protocol model support so application repos can consume generated canonical artifacts instead of redefining wire DTOs.
+Canonical message families are defined, and generated Java/Python protocol artifacts now cover the current maps, chat/heartbeat, and discord surface. Current hardening work is focused on keeping those generated canonical artifacts and compatibility checks aligned without implying full family or consumer-integration coverage.
 
 ## See Also
 - `docs/adr/ADR-001-protocol-first.md`

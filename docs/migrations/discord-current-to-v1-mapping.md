@@ -1,7 +1,7 @@
 # Discord Current-to-V1 Mapping
 
 ## Goal
-Map the current Discord linking/admin payloads used by `XCore-plugin` and `XCore-discord-bot` into canonical v1 protocol contracts.
+Map the current Discord linking/admin payloads used by `XCore-plugin` and `XCore-discord-bot` into canonical v1 protocol contracts and their generated canonical Java/Python model surface.
 
 ## Scope
 - `discord.link.confirm.command`
@@ -12,7 +12,7 @@ Map the current Discord linking/admin payloads used by `XCore-plugin` and `XCore
 ## Core Rules
 - Canonical outbound payloads use camelCase only.
 - Command and event semantics stay separate.
-- Current epoch-millis business timestamps are converted to ISO-8601 UTC in canonical payloads.
+- Current epoch-millis business timestamps are converted to ISO-8601 UTC in canonical payloads. This rule applies to payload/business timestamps, not envelope timestamp fields.
 - Legacy names such as `discord.link_confirm` are migration concerns outside the canonical protocol surface.
 
 ## Discord Link Confirm
@@ -128,7 +128,7 @@ Current plugin/bot fields:
 
 ## Main Migration Notes
 - Current plugin route semantics treat confirm, unlink, and admin-access as commands; canonical naming keeps that distinction explicit with `.command`.
-- Current command payloads may not always naturally carry `playerName`; if this becomes friction, follow the same path noted in moderation and introduce a less strict command-target subtype later.
+- Current command payloads may not always naturally carry `playerName`; consumer-side migration code may need lookup or session context to populate the canonical `player.playerName` requirement before constructing canonical payloads.
 
 ## Recommended Next Step
-Extend the Python validation scaffold to cover the new Discord fixtures, then add bot/plugin mappers for canonical Discord payloads.
+Keep consumer/plugin mappers aligned with the canonical generated Discord payloads and preserve the existing validation coverage as those mappers are introduced.
