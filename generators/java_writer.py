@@ -367,10 +367,10 @@ def _field_validation_lines(field: NormalizedField, *, indent: str) -> list[str]
     if field.shape == FieldShape.MAP:
         map_lines = [
             f'{indent}{field_name} = Objects.requireNonNull({field_name}, "{field_name} must not be null");',
-            f"{indent}{field_name} = Map.copyOf({field_name});",
             f"{indent}for (Map.Entry<String, Object> entry : {field_name}.entrySet()) {{",
             *_map_entry_validation_lines(field, indent=indent + "    "),
             f"{indent}}}",
+            f"{indent}{field_name} = {_java_map_copy_expression(field_name, allows_null=field.map_allows_null)};",
         ]
         if field.required:
             return map_lines
@@ -543,6 +543,14 @@ def _java_const_field_name(field_name: str) -> str:
             result.append("_")
         result.append(char.upper())
     return "".join(result)
+
+
+def _java_map_copy_expression(field_name: str, *, allows_null: bool) -> str:
+    if allows_null:
+        return (
+            f"java.util.Collections.unmodifiableMap(new java.util.LinkedHashMap<>({field_name}))"
+        )
+    return f"Map.copyOf({field_name})"
 
 
 def _map_entry_validation_lines(field: NormalizedField, *, indent: str) -> list[str]:

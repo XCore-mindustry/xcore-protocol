@@ -33,7 +33,11 @@ def _build_registry() -> Registry:
 def make_validator(schema_path: Path) -> Draft202012Validator:
     schema = load_json(schema_path)
     registry = _build_registry()
-    return Draft202012Validator(schema, registry=registry)
+    return Draft202012Validator(
+        schema,
+        registry=registry,
+        format_checker=Draft202012Validator.FORMAT_CHECKER,
+    )
 
 
 def validate_instance(schema_path: Path, instance: Any) -> None:

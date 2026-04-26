@@ -5,6 +5,7 @@ from pathlib import Path
 from generators.families import default_family_name, supported_family_names
 from generators.cli import build_parser, main
 from generators.discovery import load_generation_plan
+from generators.java_writer import render_java_outputs
 from generators.python_writer import render_python_outputs
 
 
@@ -104,3 +105,13 @@ def test_family_scoped_python_generation_keeps_aggregate_envelope_outputs_comple
     assert "RpcRequestEnvelopeV1" in package_init
     assert "RpcResponseEnvelopeV1" in package_init
     assert "DlqEnvelopeV1" in package_init
+
+
+def test_family_scoped_java_generation_preserves_nullable_map_values() -> None:
+    outputs = render_java_outputs(load_generation_plan(family="moderation"))
+    output_by_name = {Path(output.path).name: output.content for output in outputs}
+
+    moderation_messages = output_by_name["ModerationMessages.java"]
+
+    assert "details = java.util.Collections.unmodifiableMap(new java.util.LinkedHashMap<>(details));" in moderation_messages
+    assert "details = Map.copyOf(details);" not in moderation_messages

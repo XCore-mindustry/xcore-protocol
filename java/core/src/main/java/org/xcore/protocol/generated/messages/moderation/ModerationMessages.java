@@ -44,7 +44,6 @@ public final class ModerationMessages {
             }
             if (details != null) {
                 details = Objects.requireNonNull(details, "details must not be null");
-                details = Map.copyOf(details);
                 for (Map.Entry<String, Object> entry : details.entrySet()) {
                     Objects.requireNonNull(entry.getKey(), "details keys must not be null");
                     if (entry.getValue() == null) {
@@ -54,6 +53,7 @@ public final class ModerationMessages {
                         throw new IllegalArgumentException("details values must be one of: string, number, boolean, null");
                     }
                 }
+                details = java.util.Collections.unmodifiableMap(new java.util.LinkedHashMap<>(details));
             }
         }
     }

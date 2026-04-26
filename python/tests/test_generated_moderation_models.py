@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from jsonschema import ValidationError
+
 from xcore_protocol.generated import (
     MODERATION_AUDIT_APPENDED_V1,
     MODERATION_BAN_CREATED_V1,
@@ -96,6 +98,35 @@ def test_generated_moderation_audit_roundtrip_matches_fixture() -> None:
         spec_root() / "messages" / "moderation" / "moderation.audit.appended.v1.json",
         model.to_payload(),
     )
+
+
+def test_generated_moderation_audit_roundtrip_preserves_nullable_details_values() -> None:
+    payload = load_json(fixtures_root() / "valid" / "moderation" / "moderation.audit.appended.v1.json")
+    payload["details"]["note"] = None
+
+    model = ModerationAuditAppendedV1.from_payload(payload)
+
+    assert model.details == payload["details"]
+    assert model.to_payload() == payload
+    validate_instance(
+        spec_root() / "messages" / "moderation" / "moderation.audit.appended.v1.json",
+        model.to_payload(),
+    )
+
+
+def test_moderation_audit_schema_rejects_invalid_occurred_at_format() -> None:
+    payload = load_json(fixtures_root() / "valid" / "moderation" / "moderation.audit.appended.v1.json")
+    payload["occurredAt"] = "not-a-date-time"
+
+    try:
+        validate_instance(
+            spec_root() / "messages" / "moderation" / "moderation.audit.appended.v1.json",
+            payload,
+        )
+    except ValidationError as error:
+        assert error.validator == "format"
+    else:
+        raise AssertionError("Expected schema validation to enforce date-time format")
 
 
 def test_generated_moderation_models_remain_strict() -> None:
