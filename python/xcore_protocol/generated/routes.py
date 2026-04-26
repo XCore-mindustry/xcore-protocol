@@ -29,6 +29,15 @@ from .discord import (
     DiscordAdminAccessChangedCommandV1,
 )
 
+from .moderation import (
+    ModerationBanCreatedV1,
+    ModerationMuteCreatedV1,
+    ModerationVoteKickCreatedV1,
+    ModerationKickBannedCommandV1,
+    ModerationPardonCommandV1,
+    ModerationAuditAppendedV1,
+)
+
 @dataclass(frozen=True, slots=True)
 class RouteResponseDescriptor:
     messageType: str
@@ -271,6 +280,102 @@ DISCORD_ADMIN_ACCESS_CHANGED_COMMAND_V1 = RouteDescriptor(
     response=None,
 )
 
+MODERATION_BAN_CREATED_V1 = RouteDescriptor(
+    family='moderation',
+    methodName='moderationBanCreatedV1Route',
+    messageType='moderation.ban.created',
+    messageVersion=1,
+    payloadType=ModerationBanCreatedV1,
+    kind='event',
+    stream='xcore:evt:moderation:ban',
+    targetScope='broadcast',
+    ttlMs=120000,
+    replayable=True,
+    idempotentConsumerRecommended=True,
+    owner='moderation',
+    response=None,
+)
+
+MODERATION_MUTE_CREATED_V1 = RouteDescriptor(
+    family='moderation',
+    methodName='moderationMuteCreatedV1Route',
+    messageType='moderation.mute.created',
+    messageVersion=1,
+    payloadType=ModerationMuteCreatedV1,
+    kind='event',
+    stream='xcore:evt:moderation:mute',
+    targetScope='broadcast',
+    ttlMs=120000,
+    replayable=True,
+    idempotentConsumerRecommended=True,
+    owner='moderation',
+    response=None,
+)
+
+MODERATION_VOTE_KICK_CREATED_V1 = RouteDescriptor(
+    family='moderation',
+    methodName='moderationVoteKickCreatedV1Route',
+    messageType='moderation.vote-kick.created',
+    messageVersion=1,
+    payloadType=ModerationVoteKickCreatedV1,
+    kind='event',
+    stream='xcore:evt:moderation:votekick',
+    targetScope='broadcast',
+    ttlMs=120000,
+    replayable=True,
+    idempotentConsumerRecommended=True,
+    owner='moderation',
+    response=None,
+)
+
+MODERATION_KICK_BANNED_COMMAND_V1 = RouteDescriptor(
+    family='moderation',
+    methodName='moderationKickBannedCommandV1Route',
+    messageType='moderation.kick-banned.command',
+    messageVersion=1,
+    payloadType=ModerationKickBannedCommandV1,
+    kind='command',
+    stream='xcore:cmd:kick-banned:{server}',
+    targetScope='server',
+    ttlMs=120000,
+    replayable=False,
+    idempotentConsumerRecommended=True,
+    owner='moderation',
+    response=None,
+)
+
+MODERATION_PARDON_COMMAND_V1 = RouteDescriptor(
+    family='moderation',
+    methodName='moderationPardonCommandV1Route',
+    messageType='moderation.pardon.command',
+    messageVersion=1,
+    payloadType=ModerationPardonCommandV1,
+    kind='command',
+    stream='xcore:cmd:pardon-player:{server}',
+    targetScope='server',
+    ttlMs=120000,
+    replayable=False,
+    idempotentConsumerRecommended=True,
+    owner='moderation',
+    response=None,
+)
+
+MODERATION_AUDIT_APPENDED_V1 = RouteDescriptor(
+    family='moderation',
+    methodName='moderationAuditAppendedV1Route',
+    messageType='moderation.audit.appended',
+    messageVersion=1,
+    payloadType=ModerationAuditAppendedV1,
+    kind='event',
+    stream='xcore:evt:moderation:audit',
+    targetScope='broadcast',
+    ttlMs=120000,
+    replayable=True,
+    idempotentConsumerRecommended=True,
+    owner='moderation',
+    response=None,
+)
+
 ROUTES_BY_MESSAGE: dict[tuple[str, int], RouteDescriptor] = {
     ('maps.list.request', 1): MAPS_LIST_REQUEST_V1,
     ('maps.remove.request', 1): MAPS_REMOVE_REQUEST_V1,
@@ -285,6 +390,12 @@ ROUTES_BY_MESSAGE: dict[tuple[str, int], RouteDescriptor] = {
     ('discord.unlink.command', 1): DISCORD_UNLINK_COMMAND_V1,
     ('discord.link.status-changed', 1): DISCORD_LINK_STATUS_CHANGED_V1,
     ('discord.admin-access.changed.command', 1): DISCORD_ADMIN_ACCESS_CHANGED_COMMAND_V1,
+    ('moderation.ban.created', 1): MODERATION_BAN_CREATED_V1,
+    ('moderation.mute.created', 1): MODERATION_MUTE_CREATED_V1,
+    ('moderation.vote-kick.created', 1): MODERATION_VOTE_KICK_CREATED_V1,
+    ('moderation.kick-banned.command', 1): MODERATION_KICK_BANNED_COMMAND_V1,
+    ('moderation.pardon.command', 1): MODERATION_PARDON_COMMAND_V1,
+    ('moderation.audit.appended', 1): MODERATION_AUDIT_APPENDED_V1,
 }
 
 MapsRouteResponseDescriptor = RouteResponseDescriptor
@@ -305,6 +416,12 @@ __all__ = [
     "DISCORD_UNLINK_COMMAND_V1",
     "DISCORD_LINK_STATUS_CHANGED_V1",
     "DISCORD_ADMIN_ACCESS_CHANGED_COMMAND_V1",
+    "MODERATION_BAN_CREATED_V1",
+    "MODERATION_MUTE_CREATED_V1",
+    "MODERATION_VOTE_KICK_CREATED_V1",
+    "MODERATION_KICK_BANNED_COMMAND_V1",
+    "MODERATION_PARDON_COMMAND_V1",
+    "MODERATION_AUDIT_APPENDED_V1",
     "RouteDescriptor",
     "RouteResponseDescriptor",
     "ROUTES_BY_MESSAGE",

@@ -54,7 +54,7 @@ The first migration slice is the **moderation** family:
 - moderation audit appended
 
 ## Current Status
-Canonical message families are defined, and generated Java/Python protocol artifacts now cover the current maps, chat/heartbeat, and discord surface. Current hardening work is focused on keeping those generated canonical artifacts and compatibility checks aligned without implying full family or consumer-integration coverage.
+Canonical message families are defined, and generated Java/Python protocol artifacts now cover the current maps, chat/heartbeat, discord, and moderation surface. Current hardening work is focused on keeping those generated canonical artifacts and compatibility checks aligned without implying full family or consumer-integration coverage, while envelope generation remains the next major protocol-only gap.
 
 ## See Also
 - `docs/adr/ADR-001-protocol-first.md`

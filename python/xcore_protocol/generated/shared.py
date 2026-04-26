@@ -21,6 +21,36 @@ def _expect_list(value: Any, field_name: str) -> list[Any]:
     return value
 
 
+def _expect_json_object(
+    value: Any,
+    field_name: str,
+    *,
+    allowed_types: tuple[str, ...],
+    allow_null: bool,
+) -> dict[str, Any]:
+    mapping = _expect_mapping(value, field_name)
+    for key, item in mapping.items():
+        if item is None:
+            if allow_null:
+                continue
+            raise TypeError(f"{field_name}.{key} must not be null")
+        if isinstance(item, bool):
+            allowed = "boolean" in allowed_types
+        elif isinstance(item, str):
+            allowed = "string" in allowed_types
+        elif isinstance(item, int):
+            allowed = "integer" in allowed_types or "number" in allowed_types
+        elif isinstance(item, float):
+            allowed = "number" in allowed_types
+        else:
+            raise TypeError(f"{field_name}.{key} has unsupported value type")
+        if not allowed:
+            raise TypeError(
+                f"{field_name}.{key} must be one of: {', '.join(allowed_types)}"
+            )
+    return dict(mapping)
+
+
 def _expect_exact_keys(
     payload: Mapping[str, Any],
     *,
@@ -66,6 +96,43 @@ def _expect_instance(value: Any, field_name: str, expected_type: type[Any]) -> N
         raise TypeError(f"{field_name} must be a {expected_type.__name__}")
 
 @dataclass(frozen=True, slots=True)
+class ActorRefV1:
+    actorName: str
+    actorDiscordId: str | None = None
+    actorType: str | None = None
+
+    def __post_init__(self) -> None:
+        _expect_str(self.actorName, 'actorName')
+        if self.actorDiscordId is not None:
+            _expect_str(self.actorDiscordId, 'actorDiscordId')
+        if self.actorType is not None:
+            _expect_str(self.actorType, 'actorType')
+
+    @classmethod
+    def from_payload(cls, payload: Mapping[str, Any]) -> "ActorRefV1":
+        mapping = _expect_mapping(payload, "ActorRefV1")
+        _expect_exact_keys(
+            mapping,
+            required=frozenset(('actorName',)),
+            allowed=frozenset(('actorName', 'actorDiscordId', 'actorType')),
+            model_name="ActorRefV1",
+        )
+        return cls(
+            actorName=_expect_str(mapping['actorName'], 'actorName'),
+            actorDiscordId=(_expect_str(mapping['actorDiscordId'], 'actorDiscordId') if 'actorDiscordId' in mapping else None),
+            actorType=(_expect_str(mapping['actorType'], 'actorType') if 'actorType' in mapping else None),
+        )
+
+    def to_payload(self) -> dict[str, Any]:
+        payload: dict[str, Any] = {}
+        payload['actorName'] = self.actorName
+        if self.actorDiscordId is not None:
+            payload['actorDiscordId'] = self.actorDiscordId
+        if self.actorType is not None:
+            payload['actorType'] = self.actorType
+        return payload
+
+@dataclass(frozen=True, slots=True)
 class DiscordIdentityRefV1:
     discordId: str
     discordUsername: str | None = None
@@ -94,6 +161,39 @@ class DiscordIdentityRefV1:
         payload['discordId'] = self.discordId
         if self.discordUsername is not None:
             payload['discordUsername'] = self.discordUsername
+        return payload
+
+@dataclass(frozen=True, slots=True)
+class ExpirationInfoV1:
+    expiresAt: str | None = None
+    permanent: bool | None = None
+
+    def __post_init__(self) -> None:
+        if self.expiresAt is not None:
+            _expect_str(self.expiresAt, 'expiresAt')
+        if self.permanent is not None:
+            _expect_bool(self.permanent, 'permanent')
+
+    @classmethod
+    def from_payload(cls, payload: Mapping[str, Any]) -> "ExpirationInfoV1":
+        mapping = _expect_mapping(payload, "ExpirationInfoV1")
+        _expect_exact_keys(
+            mapping,
+            required=frozenset(()),
+            allowed=frozenset(('expiresAt', 'permanent')),
+            model_name="ExpirationInfoV1",
+        )
+        return cls(
+            expiresAt=(_expect_str(mapping['expiresAt'], 'expiresAt') if 'expiresAt' in mapping else None),
+            permanent=(_expect_bool(mapping['permanent'], 'permanent') if 'permanent' in mapping else None),
+        )
+
+    def to_payload(self) -> dict[str, Any]:
+        payload: dict[str, Any] = {}
+        if self.expiresAt is not None:
+            payload['expiresAt'] = self.expiresAt
+        if self.permanent is not None:
+            payload['permanent'] = self.permanent
         return payload
 
 @dataclass(frozen=True, slots=True)
@@ -253,9 +353,49 @@ class PlayerRefV1:
             payload['ip'] = self.ip
         return payload
 
+@dataclass(frozen=True, slots=True)
+class VoteKickParticipantV1:
+    name: str
+    pid: int | None = None
+    discordId: str | None = None
+
+    def __post_init__(self) -> None:
+        _expect_str(self.name, 'name')
+        if self.pid is not None:
+            _expect_int(self.pid, 'pid')
+        if self.discordId is not None:
+            _expect_str(self.discordId, 'discordId')
+
+    @classmethod
+    def from_payload(cls, payload: Mapping[str, Any]) -> "VoteKickParticipantV1":
+        mapping = _expect_mapping(payload, "VoteKickParticipantV1")
+        _expect_exact_keys(
+            mapping,
+            required=frozenset(('name',)),
+            allowed=frozenset(('name', 'pid', 'discordId')),
+            model_name="VoteKickParticipantV1",
+        )
+        return cls(
+            name=_expect_str(mapping['name'], 'name'),
+            pid=(_expect_int(mapping['pid'], 'pid') if 'pid' in mapping else None),
+            discordId=(_expect_str(mapping['discordId'], 'discordId') if 'discordId' in mapping else None),
+        )
+
+    def to_payload(self) -> dict[str, Any]:
+        payload: dict[str, Any] = {}
+        payload['name'] = self.name
+        if self.pid is not None:
+            payload['pid'] = self.pid
+        if self.discordId is not None:
+            payload['discordId'] = self.discordId
+        return payload
+
 __all__ = [
+    "ActorRefV1",
     "DiscordIdentityRefV1",
+    "ExpirationInfoV1",
     "MapEntryV1",
     "MapFileSourceV1",
     "PlayerRefV1",
+    "VoteKickParticipantV1",
 ]

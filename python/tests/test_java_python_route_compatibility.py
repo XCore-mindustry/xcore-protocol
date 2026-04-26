@@ -15,6 +15,8 @@ def test_generated_java_route_registries_match_python_route_surface() -> None:
         / "java/core/src/main/java/org/xcore/protocol/generated/routes/ChatRoutes.java",
         "discord": repo_root()
         / "java/core/src/main/java/org/xcore/protocol/generated/routes/DiscordRoutes.java",
+        "moderation": repo_root()
+        / "java/core/src/main/java/org/xcore/protocol/generated/routes/ModerationRoutes.java",
     }
 
     expected_by_family = _expected_route_surface_by_family()

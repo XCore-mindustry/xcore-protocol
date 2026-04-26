@@ -12,6 +12,7 @@ from .route_descriptors import RouteDescriptor
 
 SHARED_PACKAGE = "org.xcore.protocol.generated.shared"
 ROUTES_PACKAGE = "org.xcore.protocol.generated.routes"
+ENVELOPES_PACKAGE = "org.xcore.protocol.generated.envelopes"
 
 
 @dataclass(frozen=True, slots=True)
@@ -42,6 +43,7 @@ def render_java_outputs(plan: GenerationPlan) -> tuple[GeneratedFile, ...]:
     output_root = generated_java_root()
     shared_root = output_root / "org" / "xcore" / "protocol" / "generated" / "shared"
     routes_root = output_root / "org" / "xcore" / "protocol" / "generated" / "routes"
+    envelopes_root = output_root / "org" / "xcore" / "protocol" / "generated" / "envelopes"
     outputs: list[GeneratedFile] = []
 
     for schema in plan.shared_schemas:
@@ -49,6 +51,14 @@ def render_java_outputs(plan: GenerationPlan) -> tuple[GeneratedFile, ...]:
             GeneratedFile(
                 path=shared_root / f"{schema.title}.java",
                 content=_render_shared_record(schema),
+            )
+        )
+
+    for schema in plan.envelope_schemas:
+        outputs.append(
+            GeneratedFile(
+                path=envelopes_root / f"{schema.title}.java",
+                content=_render_envelope_record(schema),
             )
         )
 
@@ -101,14 +111,40 @@ def _java_messages_root(output_root: Path, config: FamilyConfig) -> Path:
 
 def _render_shared_record(schema: NormalizedSchema) -> str:
     components = ",\n".join(f"        {_component_declaration(field)}" for field in schema.fields if field.const is None)
+    imports = {"import java.util.Objects;"}
+    if any(field.shape == FieldShape.MAP for field in schema.fields if field.const is None):
+        imports.add("import java.util.Map;")
     return (
         f"package {SHARED_PACKAGE};\n\n"
-        "import java.util.Objects;\n\n"
+        + "\n".join(sorted(imports))
+        + "\n\n"
         f"public record {schema.title}(\n"
         f"{components}\n"
         ") {\n"
         f"{_render_compact_constructor(schema, indent='    ')}\n"
         "}\n"
+    )
+
+
+def _render_envelope_record(schema: NormalizedSchema) -> str:
+    components = tuple(field for field in schema.fields if field.const is None)
+    declaration = ",\n".join(f"        {_component_declaration(field)}" for field in components)
+    imports = {"import java.util.Objects;"}
+    if any(field.shape == FieldShape.MAP for field in components):
+        imports.add("import java.util.Map;")
+    if any(field.shape == FieldShape.ARRAY for field in components):
+        imports.add("import java.util.List;")
+    constants = _render_java_const_fields(schema.fields)
+    return (
+        f"package {ENVELOPES_PACKAGE};\n\n"
+        + "\n".join(sorted(imports))
+        + "\n\n"
+        + f"public record {schema.title}(\n"
+        + f"{declaration}\n"
+        + ") {\n"
+        + (constants + "\n\n" if constants else "")
+        + f"{_render_compact_constructor(schema, indent='    ')}\n"
+        + "}\n"
     )
 
 
@@ -136,6 +172,8 @@ def _render_family_imports(schemas: tuple[NormalizedSchema, ...]) -> str:
     imports = {"import java.util.Objects;"}
     if any(field.shape == FieldShape.ARRAY for schema in schemas for field in schema.fields if field.const is None):
         imports.add("import java.util.List;")
+    if any(field.shape == FieldShape.MAP for schema in schemas for field in schema.fields if field.const is None):
+        imports.add("import java.util.Map;")
     imports.update(
         f"import {SHARED_PACKAGE}.{field.ref_target.title};"
         for schema in schemas
@@ -326,6 +364,21 @@ def _render_field_validations(schema: NormalizedSchema, *, indent: str) -> list[
 
 def _field_validation_lines(field: NormalizedField, *, indent: str) -> list[str]:
     field_name = field.name
+    if field.shape == FieldShape.MAP:
+        map_lines = [
+            f'{indent}{field_name} = Objects.requireNonNull({field_name}, "{field_name} must not be null");',
+            f"{indent}{field_name} = Map.copyOf({field_name});",
+            f"{indent}for (Map.Entry<String, Object> entry : {field_name}.entrySet()) {{",
+            *_map_entry_validation_lines(field, indent=indent + "    "),
+            f"{indent}}}",
+        ]
+        if field.required:
+            return map_lines
+        return [
+            f"{indent}if ({field_name} != null) {{",
+            *[line.replace(indent, indent + "    ", 1) for line in map_lines],
+            f"{indent}}}",
+        ]
     if field.shape == FieldShape.ARRAY:
         item_type = _array_item_type(field)
         lines = [
@@ -428,10 +481,11 @@ def _component_declaration(field: NormalizedField) -> str:
 
 
 def _component_type(field: NormalizedField) -> str:
-    base_type = _base_type(field)
     if field.shape == FieldShape.ARRAY:
-        return f"List<{base_type}>"
-    return base_type
+        return f"List<{_base_type(field)}>"
+    if field.shape == FieldShape.MAP:
+        return "Map<String, Object>"
+    return _base_type(field)
 
 
 def _array_item_type(field: NormalizedField) -> str:
@@ -452,3 +506,92 @@ def _base_type(field: NormalizedField) -> str:
     if field.field_type == FieldType.OBJECT_REF and field.ref_target is not None:
         return field.ref_target.title
     raise ValueError(f"Unsupported field type for Java generation: {field}")
+
+
+def _render_java_const_fields(fields: tuple[NormalizedField, ...]) -> str:
+    lines: list[str] = []
+    for field in fields:
+        if field.const is None:
+            continue
+        const_type, const_literal = _java_const_declaration(field.const)
+        lines.append(
+            f"    public static final {const_type} {_java_const_field_name(field.name)} = {const_literal};"
+        )
+    return "\n".join(lines)
+
+
+def _java_const_declaration(value: str | int | float | bool | None) -> tuple[str, str]:
+    if isinstance(value, bool):
+        return "boolean", str(value).lower()
+    if isinstance(value, int):
+        return "int", str(value)
+    if isinstance(value, float):
+        return "double", repr(value)
+    if isinstance(value, str):
+        return "String", f'"{value}"'
+    raise ValueError(f"Unsupported Java const value: {value!r}")
+
+
+def _java_const_field_name(field_name: str) -> str:
+    normalized = field_name.replace("-", "_")
+    result: list[str] = []
+    for index, char in enumerate(normalized):
+        if char == "_":
+            result.append("_")
+            continue
+        if char.isupper() and index > 0 and normalized[index - 1] != "_":
+            result.append("_")
+        result.append(char.upper())
+    return "".join(result)
+
+
+def _map_entry_validation_lines(field: NormalizedField, *, indent: str) -> list[str]:
+    lines: list[str] = []
+    lines.append(f"{indent}Objects.requireNonNull(entry.getKey(), \"{field.name} keys must not be null\");")
+    if field.map_allows_null:
+        lines.append(f"{indent}if (entry.getValue() == null) {{")
+        lines.append(f"{indent}    continue;")
+        lines.append(f"{indent}}}")
+    else:
+        lines.append(
+            f"{indent}Objects.requireNonNull(entry.getValue(), \"{field.name} values must not be null\");"
+        )
+
+    allowed_checks = " && ".join(
+        _java_map_value_check(value_type, expression="entry.getValue()")
+        for value_type in field.map_value_types
+    )
+    if allowed_checks:
+        lines.append(f"{indent}if ({allowed_checks}) {{")
+        allowed_types = ", ".join(_java_map_value_label(value_type) for value_type in field.map_value_types)
+        if field.map_allows_null:
+            allowed_types += ", null"
+        lines.append(
+            f'{indent}    throw new IllegalArgumentException("{field.name} values must be one of: {allowed_types}");'
+        )
+        lines.append(f"{indent}}}")
+    return lines
+
+
+def _java_map_value_check(value_type: FieldType, *, expression: str) -> str:
+    if value_type == FieldType.STRING:
+        return f"!({expression} instanceof String)"
+    if value_type == FieldType.INTEGER:
+        return f"!({expression} instanceof Integer)"
+    if value_type == FieldType.NUMBER:
+        return f"!({expression} instanceof Number)"
+    if value_type == FieldType.BOOLEAN:
+        return f"!({expression} instanceof Boolean)"
+    raise ValueError(f"Unsupported Java map value type: {value_type}")
+
+
+def _java_map_value_label(value_type: FieldType) -> str:
+    if value_type == FieldType.STRING:
+        return "string"
+    if value_type == FieldType.INTEGER:
+        return "integer"
+    if value_type == FieldType.NUMBER:
+        return "number"
+    if value_type == FieldType.BOOLEAN:
+        return "boolean"
+    raise ValueError(f"Unsupported Java map value label: {value_type}")

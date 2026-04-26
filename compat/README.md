@@ -6,6 +6,7 @@ This area covers the currently generated canonical protocol surface:
 - maps
 - chat/heartbeat
 - discord
+- moderation
 
 Checks here may include fixture validation, golden-file checks, and roundtrip tests that keep generated Java and Python protocol artifacts aligned with canonical specs and committed generated outputs.
 
@@ -26,6 +27,7 @@ The current compatibility scope is limited to generated artifacts for:
 - maps
 - chat/heartbeat
 - discord
+- moderation
 
 This includes:
 - generated Python models and route registries
@@ -54,6 +56,6 @@ This compatibility area does not currently claim:
 - coverage for consumer/application integration behavior
 - legacy fixture acceptance in canonical generated models
 - runtime orchestration, transport workers, or business logic validation
-- full Java/Python parity beyond the currently generated maps, chat/heartbeat, and discord surface
+- full Java/Python parity beyond the currently generated maps, chat/heartbeat, discord, and moderation surface
 
 Canonical specs remain the source of truth. Compatibility checks here do not imply that every protocol family or every consumer integration is already covered.

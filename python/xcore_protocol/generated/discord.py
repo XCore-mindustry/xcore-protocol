@@ -26,6 +26,36 @@ def _expect_list(value: Any, field_name: str) -> list[Any]:
     return value
 
 
+def _expect_json_object(
+    value: Any,
+    field_name: str,
+    *,
+    allowed_types: tuple[str, ...],
+    allow_null: bool,
+) -> dict[str, Any]:
+    mapping = _expect_mapping(value, field_name)
+    for key, item in mapping.items():
+        if item is None:
+            if allow_null:
+                continue
+            raise TypeError(f"{field_name}.{key} must not be null")
+        if isinstance(item, bool):
+            allowed = "boolean" in allowed_types
+        elif isinstance(item, str):
+            allowed = "string" in allowed_types
+        elif isinstance(item, int):
+            allowed = "integer" in allowed_types or "number" in allowed_types
+        elif isinstance(item, float):
+            allowed = "number" in allowed_types
+        else:
+            raise TypeError(f"{field_name}.{key} has unsupported value type")
+        if not allowed:
+            raise TypeError(
+                f"{field_name}.{key} must be one of: {', '.join(allowed_types)}"
+            )
+    return dict(mapping)
+
+
 def _expect_exact_keys(
     payload: Mapping[str, Any],
     *,
@@ -83,7 +113,6 @@ class DiscordAdminAccessChangedCommandV1:
 
     MESSAGE_TYPE: ClassVar[str] = 'discord.admin-access.changed.command'
     MESSAGE_VERSION: ClassVar[int] = 1
-
     def __post_init__(self) -> None:
         _expect_instance(self.player, 'player', PlayerRefV1)
         _expect_instance(self.discord, 'discord', DiscordIdentityRefV1)
@@ -103,10 +132,10 @@ class DiscordAdminAccessChangedCommandV1:
             allowed=frozenset(('messageType', 'messageVersion', 'player', 'discord', 'admin', 'adminSource', 'requestedBy', 'reason', 'server', 'occurredAt')),
             model_name="DiscordAdminAccessChangedCommandV1",
         )
-        if mapping["messageType"] != cls.MESSAGE_TYPE:
-            raise ValueError("messageType must equal discord.admin-access.changed.command")
-        if mapping["messageVersion"] != cls.MESSAGE_VERSION:
-            raise ValueError("messageVersion must equal 1")
+        if mapping['messageType'] != cls.MESSAGE_TYPE:
+            raise ValueError('messageType' + " must equal " + repr(cls.MESSAGE_TYPE))
+        if mapping['messageVersion'] != cls.MESSAGE_VERSION:
+            raise ValueError('messageVersion' + " must equal " + repr(cls.MESSAGE_VERSION))
         return cls(
             player=PlayerRefV1.from_payload(_expect_mapping(mapping['player'], 'player')),
             discord=DiscordIdentityRefV1.from_payload(_expect_mapping(mapping['discord'], 'discord')),
@@ -120,8 +149,8 @@ class DiscordAdminAccessChangedCommandV1:
 
     def to_payload(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
-            "messageType": self.MESSAGE_TYPE,
-            "messageVersion": self.MESSAGE_VERSION,
+            'messageType': self.MESSAGE_TYPE,
+            'messageVersion': self.MESSAGE_VERSION,
         }
         payload['player'] = self.player.to_payload()
         payload['discord'] = self.discord.to_payload()
@@ -143,7 +172,6 @@ class DiscordLinkConfirmCommandV1:
 
     MESSAGE_TYPE: ClassVar[str] = 'discord.link.confirm.command'
     MESSAGE_VERSION: ClassVar[int] = 1
-
     def __post_init__(self) -> None:
         _expect_str(self.code, 'code')
         _expect_instance(self.player, 'player', PlayerRefV1)
@@ -160,10 +188,10 @@ class DiscordLinkConfirmCommandV1:
             allowed=frozenset(('messageType', 'messageVersion', 'code', 'player', 'discord', 'server', 'confirmedAt')),
             model_name="DiscordLinkConfirmCommandV1",
         )
-        if mapping["messageType"] != cls.MESSAGE_TYPE:
-            raise ValueError("messageType must equal discord.link.confirm.command")
-        if mapping["messageVersion"] != cls.MESSAGE_VERSION:
-            raise ValueError("messageVersion must equal 1")
+        if mapping['messageType'] != cls.MESSAGE_TYPE:
+            raise ValueError('messageType' + " must equal " + repr(cls.MESSAGE_TYPE))
+        if mapping['messageVersion'] != cls.MESSAGE_VERSION:
+            raise ValueError('messageVersion' + " must equal " + repr(cls.MESSAGE_VERSION))
         return cls(
             code=_expect_str(mapping['code'], 'code'),
             player=PlayerRefV1.from_payload(_expect_mapping(mapping['player'], 'player')),
@@ -174,8 +202,8 @@ class DiscordLinkConfirmCommandV1:
 
     def to_payload(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
-            "messageType": self.MESSAGE_TYPE,
-            "messageVersion": self.MESSAGE_VERSION,
+            'messageType': self.MESSAGE_TYPE,
+            'messageVersion': self.MESSAGE_VERSION,
         }
         payload['code'] = self.code
         payload['player'] = self.player.to_payload()
@@ -194,7 +222,6 @@ class DiscordLinkStatusChangedV1:
 
     MESSAGE_TYPE: ClassVar[str] = 'discord.link.status-changed'
     MESSAGE_VERSION: ClassVar[int] = 1
-
     def __post_init__(self) -> None:
         _expect_instance(self.player, 'player', PlayerRefV1)
         _expect_instance(self.discord, 'discord', DiscordIdentityRefV1)
@@ -211,10 +238,10 @@ class DiscordLinkStatusChangedV1:
             allowed=frozenset(('messageType', 'messageVersion', 'player', 'discord', 'action', 'server', 'occurredAt')),
             model_name="DiscordLinkStatusChangedV1",
         )
-        if mapping["messageType"] != cls.MESSAGE_TYPE:
-            raise ValueError("messageType must equal discord.link.status-changed")
-        if mapping["messageVersion"] != cls.MESSAGE_VERSION:
-            raise ValueError("messageVersion must equal 1")
+        if mapping['messageType'] != cls.MESSAGE_TYPE:
+            raise ValueError('messageType' + " must equal " + repr(cls.MESSAGE_TYPE))
+        if mapping['messageVersion'] != cls.MESSAGE_VERSION:
+            raise ValueError('messageVersion' + " must equal " + repr(cls.MESSAGE_VERSION))
         return cls(
             player=PlayerRefV1.from_payload(_expect_mapping(mapping['player'], 'player')),
             discord=DiscordIdentityRefV1.from_payload(_expect_mapping(mapping['discord'], 'discord')),
@@ -225,8 +252,8 @@ class DiscordLinkStatusChangedV1:
 
     def to_payload(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
-            "messageType": self.MESSAGE_TYPE,
-            "messageVersion": self.MESSAGE_VERSION,
+            'messageType': self.MESSAGE_TYPE,
+            'messageVersion': self.MESSAGE_VERSION,
         }
         payload['player'] = self.player.to_payload()
         payload['discord'] = self.discord.to_payload()
@@ -245,7 +272,6 @@ class DiscordUnlinkCommandV1:
 
     MESSAGE_TYPE: ClassVar[str] = 'discord.unlink.command'
     MESSAGE_VERSION: ClassVar[int] = 1
-
     def __post_init__(self) -> None:
         _expect_instance(self.player, 'player', PlayerRefV1)
         _expect_instance(self.discord, 'discord', DiscordIdentityRefV1)
@@ -262,10 +288,10 @@ class DiscordUnlinkCommandV1:
             allowed=frozenset(('messageType', 'messageVersion', 'player', 'discord', 'requestedBy', 'server', 'requestedAt')),
             model_name="DiscordUnlinkCommandV1",
         )
-        if mapping["messageType"] != cls.MESSAGE_TYPE:
-            raise ValueError("messageType must equal discord.unlink.command")
-        if mapping["messageVersion"] != cls.MESSAGE_VERSION:
-            raise ValueError("messageVersion must equal 1")
+        if mapping['messageType'] != cls.MESSAGE_TYPE:
+            raise ValueError('messageType' + " must equal " + repr(cls.MESSAGE_TYPE))
+        if mapping['messageVersion'] != cls.MESSAGE_VERSION:
+            raise ValueError('messageVersion' + " must equal " + repr(cls.MESSAGE_VERSION))
         return cls(
             player=PlayerRefV1.from_payload(_expect_mapping(mapping['player'], 'player')),
             discord=DiscordIdentityRefV1.from_payload(_expect_mapping(mapping['discord'], 'discord')),
@@ -276,8 +302,8 @@ class DiscordUnlinkCommandV1:
 
     def to_payload(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
-            "messageType": self.MESSAGE_TYPE,
-            "messageVersion": self.MESSAGE_VERSION,
+            'messageType': self.MESSAGE_TYPE,
+            'messageVersion': self.MESSAGE_VERSION,
         }
         payload['player'] = self.player.to_payload()
         payload['discord'] = self.discord.to_payload()

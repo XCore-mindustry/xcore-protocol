@@ -81,3 +81,26 @@ def test_family_scoped_python_generation_keeps_aggregate_outputs_complete() -> N
     assert "MapFileSourceV1" in shared_module
     assert "PlayerRefV1" in shared_module
     assert "DiscordIdentityRefV1" in shared_module
+
+
+def test_family_scoped_python_generation_keeps_aggregate_envelope_outputs_complete() -> None:
+    outputs = render_python_outputs(load_generation_plan(family="moderation"))
+    output_by_name = {Path(output.path).name: output.content for output in outputs}
+
+    assert "envelopes.py" in output_by_name
+
+    envelopes_module = output_by_name["envelopes.py"]
+    package_init = output_by_name["__init__.py"]
+
+    assert "class EnvelopeBaseV1:" in envelopes_module
+    assert "class EventEnvelopeV1:" in envelopes_module
+    assert "class CommandEnvelopeV1:" in envelopes_module
+    assert "class RpcRequestEnvelopeV1:" in envelopes_module
+    assert "class RpcResponseEnvelopeV1:" in envelopes_module
+    assert "class DlqEnvelopeV1:" in envelopes_module
+    assert "EnvelopeBaseV1" in package_init
+    assert "EventEnvelopeV1" in package_init
+    assert "CommandEnvelopeV1" in package_init
+    assert "RpcRequestEnvelopeV1" in package_init
+    assert "RpcResponseEnvelopeV1" in package_init
+    assert "DlqEnvelopeV1" in package_init

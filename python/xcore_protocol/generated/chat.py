@@ -26,6 +26,36 @@ def _expect_list(value: Any, field_name: str) -> list[Any]:
     return value
 
 
+def _expect_json_object(
+    value: Any,
+    field_name: str,
+    *,
+    allowed_types: tuple[str, ...],
+    allow_null: bool,
+) -> dict[str, Any]:
+    mapping = _expect_mapping(value, field_name)
+    for key, item in mapping.items():
+        if item is None:
+            if allow_null:
+                continue
+            raise TypeError(f"{field_name}.{key} must not be null")
+        if isinstance(item, bool):
+            allowed = "boolean" in allowed_types
+        elif isinstance(item, str):
+            allowed = "string" in allowed_types
+        elif isinstance(item, int):
+            allowed = "integer" in allowed_types or "number" in allowed_types
+        elif isinstance(item, float):
+            allowed = "number" in allowed_types
+        else:
+            raise TypeError(f"{field_name}.{key} has unsupported value type")
+        if not allowed:
+            raise TypeError(
+                f"{field_name}.{key} must be one of: {', '.join(allowed_types)}"
+            )
+    return dict(mapping)
+
+
 def _expect_exact_keys(
     payload: Mapping[str, Any],
     *,
@@ -78,7 +108,6 @@ class ChatDiscordIngressCommandV1:
 
     MESSAGE_TYPE: ClassVar[str] = 'chat.discord-ingress.command'
     MESSAGE_VERSION: ClassVar[int] = 1
-
     def __post_init__(self) -> None:
         _expect_str(self.authorName, 'authorName')
         _expect_str(self.message, 'message')
@@ -93,10 +122,10 @@ class ChatDiscordIngressCommandV1:
             allowed=frozenset(('messageType', 'messageVersion', 'authorName', 'message', 'server')),
             model_name="ChatDiscordIngressCommandV1",
         )
-        if mapping["messageType"] != cls.MESSAGE_TYPE:
-            raise ValueError("messageType must equal chat.discord-ingress.command")
-        if mapping["messageVersion"] != cls.MESSAGE_VERSION:
-            raise ValueError("messageVersion must equal 1")
+        if mapping['messageType'] != cls.MESSAGE_TYPE:
+            raise ValueError('messageType' + " must equal " + repr(cls.MESSAGE_TYPE))
+        if mapping['messageVersion'] != cls.MESSAGE_VERSION:
+            raise ValueError('messageVersion' + " must equal " + repr(cls.MESSAGE_VERSION))
         return cls(
             authorName=_expect_str(mapping['authorName'], 'authorName'),
             message=_expect_str(mapping['message'], 'message'),
@@ -105,8 +134,8 @@ class ChatDiscordIngressCommandV1:
 
     def to_payload(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
-            "messageType": self.MESSAGE_TYPE,
-            "messageVersion": self.MESSAGE_VERSION,
+            'messageType': self.MESSAGE_TYPE,
+            'messageVersion': self.MESSAGE_VERSION,
         }
         payload['authorName'] = self.authorName
         payload['message'] = self.message
@@ -121,7 +150,6 @@ class ChatGlobalV1:
 
     MESSAGE_TYPE: ClassVar[str] = 'chat.global'
     MESSAGE_VERSION: ClassVar[int] = 1
-
     def __post_init__(self) -> None:
         _expect_str(self.authorName, 'authorName')
         _expect_str(self.message, 'message')
@@ -136,10 +164,10 @@ class ChatGlobalV1:
             allowed=frozenset(('messageType', 'messageVersion', 'authorName', 'message', 'server')),
             model_name="ChatGlobalV1",
         )
-        if mapping["messageType"] != cls.MESSAGE_TYPE:
-            raise ValueError("messageType must equal chat.global")
-        if mapping["messageVersion"] != cls.MESSAGE_VERSION:
-            raise ValueError("messageVersion must equal 1")
+        if mapping['messageType'] != cls.MESSAGE_TYPE:
+            raise ValueError('messageType' + " must equal " + repr(cls.MESSAGE_TYPE))
+        if mapping['messageVersion'] != cls.MESSAGE_VERSION:
+            raise ValueError('messageVersion' + " must equal " + repr(cls.MESSAGE_VERSION))
         return cls(
             authorName=_expect_str(mapping['authorName'], 'authorName'),
             message=_expect_str(mapping['message'], 'message'),
@@ -148,8 +176,8 @@ class ChatGlobalV1:
 
     def to_payload(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
-            "messageType": self.MESSAGE_TYPE,
-            "messageVersion": self.MESSAGE_VERSION,
+            'messageType': self.MESSAGE_TYPE,
+            'messageVersion': self.MESSAGE_VERSION,
         }
         payload['authorName'] = self.authorName
         payload['message'] = self.message
@@ -164,7 +192,6 @@ class ChatMessageV1:
 
     MESSAGE_TYPE: ClassVar[str] = 'chat.message'
     MESSAGE_VERSION: ClassVar[int] = 1
-
     def __post_init__(self) -> None:
         _expect_str(self.authorName, 'authorName')
         _expect_str(self.message, 'message')
@@ -179,10 +206,10 @@ class ChatMessageV1:
             allowed=frozenset(('messageType', 'messageVersion', 'authorName', 'message', 'server')),
             model_name="ChatMessageV1",
         )
-        if mapping["messageType"] != cls.MESSAGE_TYPE:
-            raise ValueError("messageType must equal chat.message")
-        if mapping["messageVersion"] != cls.MESSAGE_VERSION:
-            raise ValueError("messageVersion must equal 1")
+        if mapping['messageType'] != cls.MESSAGE_TYPE:
+            raise ValueError('messageType' + " must equal " + repr(cls.MESSAGE_TYPE))
+        if mapping['messageVersion'] != cls.MESSAGE_VERSION:
+            raise ValueError('messageVersion' + " must equal " + repr(cls.MESSAGE_VERSION))
         return cls(
             authorName=_expect_str(mapping['authorName'], 'authorName'),
             message=_expect_str(mapping['message'], 'message'),
@@ -191,8 +218,8 @@ class ChatMessageV1:
 
     def to_payload(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
-            "messageType": self.MESSAGE_TYPE,
-            "messageVersion": self.MESSAGE_VERSION,
+            'messageType': self.MESSAGE_TYPE,
+            'messageVersion': self.MESSAGE_VERSION,
         }
         payload['authorName'] = self.authorName
         payload['message'] = self.message
@@ -207,7 +234,6 @@ class PlayerJoinLeaveV1:
 
     MESSAGE_TYPE: ClassVar[str] = 'player.join-leave'
     MESSAGE_VERSION: ClassVar[int] = 1
-
     def __post_init__(self) -> None:
         _expect_str(self.playerName, 'playerName')
         _expect_str(self.server, 'server')
@@ -222,10 +248,10 @@ class PlayerJoinLeaveV1:
             allowed=frozenset(('messageType', 'messageVersion', 'playerName', 'server', 'joined')),
             model_name="PlayerJoinLeaveV1",
         )
-        if mapping["messageType"] != cls.MESSAGE_TYPE:
-            raise ValueError("messageType must equal player.join-leave")
-        if mapping["messageVersion"] != cls.MESSAGE_VERSION:
-            raise ValueError("messageVersion must equal 1")
+        if mapping['messageType'] != cls.MESSAGE_TYPE:
+            raise ValueError('messageType' + " must equal " + repr(cls.MESSAGE_TYPE))
+        if mapping['messageVersion'] != cls.MESSAGE_VERSION:
+            raise ValueError('messageVersion' + " must equal " + repr(cls.MESSAGE_VERSION))
         return cls(
             playerName=_expect_str(mapping['playerName'], 'playerName'),
             server=_expect_str(mapping['server'], 'server'),
@@ -234,8 +260,8 @@ class PlayerJoinLeaveV1:
 
     def to_payload(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
-            "messageType": self.MESSAGE_TYPE,
-            "messageVersion": self.MESSAGE_VERSION,
+            'messageType': self.MESSAGE_TYPE,
+            'messageVersion': self.MESSAGE_VERSION,
         }
         payload['playerName'] = self.playerName
         payload['server'] = self.server
@@ -249,7 +275,6 @@ class ServerActionV1:
 
     MESSAGE_TYPE: ClassVar[str] = 'server.action'
     MESSAGE_VERSION: ClassVar[int] = 1
-
     def __post_init__(self) -> None:
         _expect_str(self.message, 'message')
         _expect_str(self.server, 'server')
@@ -263,10 +288,10 @@ class ServerActionV1:
             allowed=frozenset(('messageType', 'messageVersion', 'message', 'server')),
             model_name="ServerActionV1",
         )
-        if mapping["messageType"] != cls.MESSAGE_TYPE:
-            raise ValueError("messageType must equal server.action")
-        if mapping["messageVersion"] != cls.MESSAGE_VERSION:
-            raise ValueError("messageVersion must equal 1")
+        if mapping['messageType'] != cls.MESSAGE_TYPE:
+            raise ValueError('messageType' + " must equal " + repr(cls.MESSAGE_TYPE))
+        if mapping['messageVersion'] != cls.MESSAGE_VERSION:
+            raise ValueError('messageVersion' + " must equal " + repr(cls.MESSAGE_VERSION))
         return cls(
             message=_expect_str(mapping['message'], 'message'),
             server=_expect_str(mapping['server'], 'server'),
@@ -274,8 +299,8 @@ class ServerActionV1:
 
     def to_payload(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
-            "messageType": self.MESSAGE_TYPE,
-            "messageVersion": self.MESSAGE_VERSION,
+            'messageType': self.MESSAGE_TYPE,
+            'messageVersion': self.MESSAGE_VERSION,
         }
         payload['message'] = self.message
         payload['server'] = self.server
@@ -293,7 +318,6 @@ class ServerHeartbeatV1:
 
     MESSAGE_TYPE: ClassVar[str] = 'server.heartbeat'
     MESSAGE_VERSION: ClassVar[int] = 1
-
     def __post_init__(self) -> None:
         _expect_str(self.serverName, 'serverName')
         _expect_int(self.discordChannelId, 'discordChannelId')
@@ -314,10 +338,10 @@ class ServerHeartbeatV1:
             allowed=frozenset(('messageType', 'messageVersion', 'serverName', 'discordChannelId', 'players', 'maxPlayers', 'version', 'host', 'port')),
             model_name="ServerHeartbeatV1",
         )
-        if mapping["messageType"] != cls.MESSAGE_TYPE:
-            raise ValueError("messageType must equal server.heartbeat")
-        if mapping["messageVersion"] != cls.MESSAGE_VERSION:
-            raise ValueError("messageVersion must equal 1")
+        if mapping['messageType'] != cls.MESSAGE_TYPE:
+            raise ValueError('messageType' + " must equal " + repr(cls.MESSAGE_TYPE))
+        if mapping['messageVersion'] != cls.MESSAGE_VERSION:
+            raise ValueError('messageVersion' + " must equal " + repr(cls.MESSAGE_VERSION))
         return cls(
             serverName=_expect_str(mapping['serverName'], 'serverName'),
             discordChannelId=_expect_int(mapping['discordChannelId'], 'discordChannelId'),
@@ -330,8 +354,8 @@ class ServerHeartbeatV1:
 
     def to_payload(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
-            "messageType": self.MESSAGE_TYPE,
-            "messageVersion": self.MESSAGE_VERSION,
+            'messageType': self.MESSAGE_TYPE,
+            'messageVersion': self.MESSAGE_VERSION,
         }
         payload['serverName'] = self.serverName
         payload['discordChannelId'] = self.discordChannelId

@@ -2,7 +2,7 @@
 
 This area is for roundtrip, fixture-validation, and golden-style checks across generated Java and Python protocol artifacts.
 
-The current documented scope is the generated maps, chat/heartbeat, and discord surface.
+The current documented scope is the generated maps, chat/heartbeat, discord, and moderation surface.
 
 Within that scope:
 - canonical specs remain authoritative

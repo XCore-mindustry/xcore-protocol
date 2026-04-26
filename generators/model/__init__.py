@@ -6,6 +6,7 @@ from .normalized_schema import (
     NormalizedField,
     NormalizedSchema,
     RefTarget,
+    load_envelope_schema,
     load_message_schema,
     load_shared_schema,
 )
@@ -18,6 +19,7 @@ __all__ = [
     "NormalizedRoute",
     "NormalizedSchema",
     "RefTarget",
+    "load_envelope_schema",
     "RouteResponse",
     "load_message_schema",
     "load_routes",

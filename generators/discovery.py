@@ -6,7 +6,14 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .families import FamilyConfig, entrypoint_family_configs, resolve_family_configs
-from .model import NormalizedRoute, NormalizedSchema, load_message_schema, load_routes, load_shared_schema
+from .model import (
+    NormalizedRoute,
+    NormalizedSchema,
+    load_envelope_schema,
+    load_message_schema,
+    load_routes,
+    load_shared_schema,
+)
 from .route_descriptors import RouteDescriptor, build_route_descriptors
 
 
@@ -22,6 +29,7 @@ class FamilyGenerationInput:
 class GenerationPlan:
     shared_schemas: tuple[NormalizedSchema, ...]
     family_inputs: tuple[FamilyGenerationInput, ...]
+    envelope_schemas: tuple[NormalizedSchema, ...]
     route_descriptors: tuple[RouteDescriptor, ...]
 
     @property
@@ -41,6 +49,10 @@ class GenerationPlan:
         return self.message_schemas_for("discord")
 
     @property
+    def moderation_schemas(self) -> tuple[NormalizedSchema, ...]:
+        return self.message_schemas_for("moderation")
+
+    @property
     def map_routes(self) -> tuple[RouteDescriptor, ...]:
         return self.route_descriptors_for("maps")
 
@@ -51,6 +63,10 @@ class GenerationPlan:
     @property
     def discord_routes(self) -> tuple[RouteDescriptor, ...]:
         return self.route_descriptors_for("discord")
+
+    @property
+    def moderation_routes(self) -> tuple[RouteDescriptor, ...]:
+        return self.route_descriptors_for("moderation")
 
     def message_schemas_for(self, family: str) -> tuple[NormalizedSchema, ...]:
         family_input = self._family_input(family)
@@ -84,6 +100,10 @@ def generated_python_root() -> Path:
 
 def generated_java_root() -> Path:
     return repo_root() / "java" / "core" / "src" / "main" / "java"
+
+
+def envelope_spec_root() -> Path:
+    return spec_root() / "envelopes"
 
 
 def _load_shared_schemas() -> tuple[NormalizedSchema, ...]:
@@ -152,6 +172,19 @@ def _load_route_descriptors(
     return tuple(descriptors)
 
 
+def _load_envelope_schemas() -> tuple[NormalizedSchema, ...]:
+    envelope_root = envelope_spec_root()
+    envelope_paths = (
+        envelope_root / "envelope-base.v1.json",
+        envelope_root / "event-envelope.v1.json",
+        envelope_root / "command-envelope.v1.json",
+        envelope_root / "rpc-request-envelope.v1.json",
+        envelope_root / "rpc-response-envelope.v1.json",
+        envelope_root / "dlq-envelope.v1.json",
+    )
+    return tuple(load_envelope_schema(path) for path in envelope_paths)
+
+
 def load_generation_plan(*, family: str | None) -> GenerationPlan:
     requested_configs = resolve_family_configs(family)
     return _build_generation_plan(requested_configs)
@@ -187,6 +220,7 @@ def _build_generation_plan(requested_configs: tuple[FamilyConfig, ...]) -> Gener
     return GenerationPlan(
         shared_schemas=shared_schemas,
         family_inputs=family_inputs,
+        envelope_schemas=_load_envelope_schemas(),
         route_descriptors=_load_route_descriptors(family_inputs),
     )
 

@@ -26,6 +26,36 @@ def _expect_list(value: Any, field_name: str) -> list[Any]:
     return value
 
 
+def _expect_json_object(
+    value: Any,
+    field_name: str,
+    *,
+    allowed_types: tuple[str, ...],
+    allow_null: bool,
+) -> dict[str, Any]:
+    mapping = _expect_mapping(value, field_name)
+    for key, item in mapping.items():
+        if item is None:
+            if allow_null:
+                continue
+            raise TypeError(f"{field_name}.{key} must not be null")
+        if isinstance(item, bool):
+            allowed = "boolean" in allowed_types
+        elif isinstance(item, str):
+            allowed = "string" in allowed_types
+        elif isinstance(item, int):
+            allowed = "integer" in allowed_types or "number" in allowed_types
+        elif isinstance(item, float):
+            allowed = "number" in allowed_types
+        else:
+            raise TypeError(f"{field_name}.{key} has unsupported value type")
+        if not allowed:
+            raise TypeError(
+                f"{field_name}.{key} must be one of: {', '.join(allowed_types)}"
+            )
+    return dict(mapping)
+
+
 def _expect_exact_keys(
     payload: Mapping[str, Any],
     *,
@@ -76,7 +106,6 @@ class MapsListRequestV1:
 
     MESSAGE_TYPE: ClassVar[str] = 'maps.list.request'
     MESSAGE_VERSION: ClassVar[int] = 1
-
     def __post_init__(self) -> None:
         _expect_str(self.server, 'server')
 
@@ -89,18 +118,18 @@ class MapsListRequestV1:
             allowed=frozenset(('messageType', 'messageVersion', 'server')),
             model_name="MapsListRequestV1",
         )
-        if mapping["messageType"] != cls.MESSAGE_TYPE:
-            raise ValueError("messageType must equal maps.list.request")
-        if mapping["messageVersion"] != cls.MESSAGE_VERSION:
-            raise ValueError("messageVersion must equal 1")
+        if mapping['messageType'] != cls.MESSAGE_TYPE:
+            raise ValueError('messageType' + " must equal " + repr(cls.MESSAGE_TYPE))
+        if mapping['messageVersion'] != cls.MESSAGE_VERSION:
+            raise ValueError('messageVersion' + " must equal " + repr(cls.MESSAGE_VERSION))
         return cls(
             server=_expect_str(mapping['server'], 'server'),
         )
 
     def to_payload(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
-            "messageType": self.MESSAGE_TYPE,
-            "messageVersion": self.MESSAGE_VERSION,
+            'messageType': self.MESSAGE_TYPE,
+            'messageVersion': self.MESSAGE_VERSION,
         }
         payload['server'] = self.server
         return payload
@@ -112,7 +141,6 @@ class MapsListResponseV1:
 
     MESSAGE_TYPE: ClassVar[str] = 'maps.list.response'
     MESSAGE_VERSION: ClassVar[int] = 1
-
     def __post_init__(self) -> None:
         _expect_str(self.server, 'server')
         if not isinstance(self.maps, tuple):
@@ -129,10 +157,10 @@ class MapsListResponseV1:
             allowed=frozenset(('messageType', 'messageVersion', 'server', 'maps')),
             model_name="MapsListResponseV1",
         )
-        if mapping["messageType"] != cls.MESSAGE_TYPE:
-            raise ValueError("messageType must equal maps.list.response")
-        if mapping["messageVersion"] != cls.MESSAGE_VERSION:
-            raise ValueError("messageVersion must equal 1")
+        if mapping['messageType'] != cls.MESSAGE_TYPE:
+            raise ValueError('messageType' + " must equal " + repr(cls.MESSAGE_TYPE))
+        if mapping['messageVersion'] != cls.MESSAGE_VERSION:
+            raise ValueError('messageVersion' + " must equal " + repr(cls.MESSAGE_VERSION))
         return cls(
             server=_expect_str(mapping['server'], 'server'),
             maps=tuple(MapEntryV1.from_payload(_expect_mapping(item, 'maps[]')) for item in _expect_list(mapping['maps'], 'maps')),
@@ -140,8 +168,8 @@ class MapsListResponseV1:
 
     def to_payload(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
-            "messageType": self.MESSAGE_TYPE,
-            "messageVersion": self.MESSAGE_VERSION,
+            'messageType': self.MESSAGE_TYPE,
+            'messageVersion': self.MESSAGE_VERSION,
         }
         payload['server'] = self.server
         payload['maps'] = [item.to_payload() for item in self.maps]
@@ -154,7 +182,6 @@ class MapsLoadCommandV1:
 
     MESSAGE_TYPE: ClassVar[str] = 'maps.load.command'
     MESSAGE_VERSION: ClassVar[int] = 1
-
     def __post_init__(self) -> None:
         _expect_str(self.server, 'server')
         if not isinstance(self.files, tuple):
@@ -171,10 +198,10 @@ class MapsLoadCommandV1:
             allowed=frozenset(('messageType', 'messageVersion', 'server', 'files')),
             model_name="MapsLoadCommandV1",
         )
-        if mapping["messageType"] != cls.MESSAGE_TYPE:
-            raise ValueError("messageType must equal maps.load.command")
-        if mapping["messageVersion"] != cls.MESSAGE_VERSION:
-            raise ValueError("messageVersion must equal 1")
+        if mapping['messageType'] != cls.MESSAGE_TYPE:
+            raise ValueError('messageType' + " must equal " + repr(cls.MESSAGE_TYPE))
+        if mapping['messageVersion'] != cls.MESSAGE_VERSION:
+            raise ValueError('messageVersion' + " must equal " + repr(cls.MESSAGE_VERSION))
         return cls(
             server=_expect_str(mapping['server'], 'server'),
             files=tuple(MapFileSourceV1.from_payload(_expect_mapping(item, 'files[]')) for item in _expect_list(mapping['files'], 'files')),
@@ -182,8 +209,8 @@ class MapsLoadCommandV1:
 
     def to_payload(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
-            "messageType": self.MESSAGE_TYPE,
-            "messageVersion": self.MESSAGE_VERSION,
+            'messageType': self.MESSAGE_TYPE,
+            'messageVersion': self.MESSAGE_VERSION,
         }
         payload['server'] = self.server
         payload['files'] = [item.to_payload() for item in self.files]
@@ -196,7 +223,6 @@ class MapsRemoveRequestV1:
 
     MESSAGE_TYPE: ClassVar[str] = 'maps.remove.request'
     MESSAGE_VERSION: ClassVar[int] = 1
-
     def __post_init__(self) -> None:
         _expect_str(self.server, 'server')
         _expect_str(self.fileName, 'fileName')
@@ -210,10 +236,10 @@ class MapsRemoveRequestV1:
             allowed=frozenset(('messageType', 'messageVersion', 'server', 'fileName')),
             model_name="MapsRemoveRequestV1",
         )
-        if mapping["messageType"] != cls.MESSAGE_TYPE:
-            raise ValueError("messageType must equal maps.remove.request")
-        if mapping["messageVersion"] != cls.MESSAGE_VERSION:
-            raise ValueError("messageVersion must equal 1")
+        if mapping['messageType'] != cls.MESSAGE_TYPE:
+            raise ValueError('messageType' + " must equal " + repr(cls.MESSAGE_TYPE))
+        if mapping['messageVersion'] != cls.MESSAGE_VERSION:
+            raise ValueError('messageVersion' + " must equal " + repr(cls.MESSAGE_VERSION))
         return cls(
             server=_expect_str(mapping['server'], 'server'),
             fileName=_expect_str(mapping['fileName'], 'fileName'),
@@ -221,8 +247,8 @@ class MapsRemoveRequestV1:
 
     def to_payload(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
-            "messageType": self.MESSAGE_TYPE,
-            "messageVersion": self.MESSAGE_VERSION,
+            'messageType': self.MESSAGE_TYPE,
+            'messageVersion': self.MESSAGE_VERSION,
         }
         payload['server'] = self.server
         payload['fileName'] = self.fileName
@@ -235,7 +261,6 @@ class MapsRemoveResponseV1:
 
     MESSAGE_TYPE: ClassVar[str] = 'maps.remove.response'
     MESSAGE_VERSION: ClassVar[int] = 1
-
     def __post_init__(self) -> None:
         _expect_str(self.server, 'server')
         _expect_str(self.result, 'result')
@@ -249,10 +274,10 @@ class MapsRemoveResponseV1:
             allowed=frozenset(('messageType', 'messageVersion', 'server', 'result')),
             model_name="MapsRemoveResponseV1",
         )
-        if mapping["messageType"] != cls.MESSAGE_TYPE:
-            raise ValueError("messageType must equal maps.remove.response")
-        if mapping["messageVersion"] != cls.MESSAGE_VERSION:
-            raise ValueError("messageVersion must equal 1")
+        if mapping['messageType'] != cls.MESSAGE_TYPE:
+            raise ValueError('messageType' + " must equal " + repr(cls.MESSAGE_TYPE))
+        if mapping['messageVersion'] != cls.MESSAGE_VERSION:
+            raise ValueError('messageVersion' + " must equal " + repr(cls.MESSAGE_VERSION))
         return cls(
             server=_expect_str(mapping['server'], 'server'),
             result=_expect_str(mapping['result'], 'result'),
@@ -260,8 +285,8 @@ class MapsRemoveResponseV1:
 
     def to_payload(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
-            "messageType": self.MESSAGE_TYPE,
-            "messageVersion": self.MESSAGE_VERSION,
+            'messageType': self.MESSAGE_TYPE,
+            'messageVersion': self.MESSAGE_VERSION,
         }
         payload['server'] = self.server
         payload['result'] = self.result

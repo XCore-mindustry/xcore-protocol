@@ -143,6 +143,41 @@ def test_generation_plan_supports_discord_family_with_nested_shared_refs() -> No
     ]
 
 
+def test_generation_plan_supports_moderation_family_with_shared_refs() -> None:
+    plan = load_generation_plan(family="moderation")
+
+    assert [schema.title for schema in plan.shared_schemas] == [
+        "ActorRefV1",
+        "ExpirationInfoV1",
+        "PlayerRefV1",
+        "VoteKickParticipantV1",
+    ]
+    assert [schema.title for schema in plan.moderation_schemas] == [
+        "ModerationAuditAppendedV1",
+        "ModerationBanCreatedV1",
+        "ModerationKickBannedCommandV1",
+        "ModerationMuteCreatedV1",
+        "ModerationPardonCommandV1",
+        "ModerationVoteKickCreatedV1",
+    ]
+    assert [route.message_type for route in plan.routes_for("moderation")] == [
+        "moderation.ban.created",
+        "moderation.mute.created",
+        "moderation.vote-kick.created",
+        "moderation.kick-banned.command",
+        "moderation.pardon.command",
+        "moderation.audit.appended",
+    ]
+    assert [route.constant_name for route in plan.moderation_routes] == [
+        "MODERATION_BAN_CREATED_V1",
+        "MODERATION_MUTE_CREATED_V1",
+        "MODERATION_VOTE_KICK_CREATED_V1",
+        "MODERATION_KICK_BANNED_COMMAND_V1",
+        "MODERATION_PARDON_COMMAND_V1",
+        "MODERATION_AUDIT_APPENDED_V1",
+    ]
+
+
 def test_message_type_constant_name_normalizes_hyphenated_identifiers() -> None:
     assert message_type_constant_name("chat.discord-ingress.command", 1) == "CHAT_DISCORD_INGRESS_COMMAND_V1"
     assert message_type_constant_name("player.join-leave", 1) == "PLAYER_JOIN_LEAVE_V1"
