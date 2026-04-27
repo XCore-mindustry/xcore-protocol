@@ -2,7 +2,6 @@
   "messageType": "moderation.kick-banned.command",
   "messageVersion": 1,
   "target": {
-    "playerUuid": "uuid-7",
     "ip": "1.2.3.4"
   },
   "server": "mini-pvp",
