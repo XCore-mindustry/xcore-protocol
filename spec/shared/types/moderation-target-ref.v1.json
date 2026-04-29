@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:xcore:protocol:shared:types:player-command-target:v1",
-  "title": "PlayerCommandTargetV1",
+  "$id": "urn:xcore:protocol:shared:types:moderation-target-ref:v1",
+  "title": "ModerationTargetRefV1",
   "type": "object",
   "additionalProperties": false,
   "anyOf": [

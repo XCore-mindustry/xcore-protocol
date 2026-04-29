@@ -2,13 +2,13 @@ package org.xcore.protocol.generated.shared;
 
 import java.util.Objects;
 
-public record PlayerCommandTargetV1(
+public record ModerationTargetRefV1(
         String playerUuid,
         Integer playerPid,
         String playerName,
         String ip
 ) {
-    public PlayerCommandTargetV1 {
+    public ModerationTargetRefV1 {
         if (playerUuid != null) {
             Objects.requireNonNull(playerUuid, "playerUuid must not be null");
             if (playerUuid.length() < 1) {
