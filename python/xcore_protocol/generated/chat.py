@@ -7,11 +7,6 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, ClassVar
 
-from .shared import (
-    MapEntryV1,
-    MapFileSourceV1,
-)
-
 def _expect_mapping(value: Any, field_name: str) -> Mapping[str, Any]:
     if not isinstance(value, Mapping):
         raise TypeError(f"{field_name} must be an object")

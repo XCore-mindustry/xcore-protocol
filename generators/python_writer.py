@@ -393,9 +393,9 @@ def _render_family_module(
     message_schemas: tuple[NormalizedSchema, ...],
     shared_schemas: tuple[NormalizedSchema, ...],
 ) -> str:
+    referenced_shared_schemas = _referenced_shared_schemas(message_schemas, shared_schemas)
     shared_imports = "\n".join(
-        [f"    {schema.title}," for schema in shared_schemas]
-        + [f"    {enum_name}," for schema in shared_schemas for enum_name in _schema_enum_names(schema)]
+        f"    {schema.title}," for schema in referenced_shared_schemas
     )
     exports = "\n".join(
         [f"    \"{schema.title}\"," for schema in message_schemas]
@@ -750,6 +750,19 @@ def _render_const_classvars(fields: tuple[NormalizedField, ...]) -> str:
     return "\n".join(lines)
 
 
+def _referenced_shared_schemas(
+    message_schemas: tuple[NormalizedSchema, ...],
+    shared_schemas: tuple[NormalizedSchema, ...],
+) -> tuple[NormalizedSchema, ...]:
+    referenced_titles = {
+        field.ref_target.title
+        for schema in message_schemas
+        for field in schema.fields
+        if field.ref_target is not None
+    }
+    return tuple(schema for schema in shared_schemas if schema.title in referenced_titles)
+
+
 def _const_annotation(value: str | int | float | bool | None) -> str:
     if isinstance(value, bool):
         return "bool"
@@ -796,7 +809,7 @@ def _render_from_payload(schema: NormalizedSchema) -> str:
         f"            model_name=\"{schema.title}\",\n"
         f"        )\n"
         + _render_const_field_checks(schema)
-        + f"        return cls(\n"
+        + "        return cls(\n"
         + ("\n".join(init_lines) + "\n" if init_lines else "")
         + "        )"
     )

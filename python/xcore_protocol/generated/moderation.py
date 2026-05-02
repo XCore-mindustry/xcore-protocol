@@ -14,7 +14,6 @@ from .shared import (
     PlayerCommandTargetV1,
     PlayerRefV1,
     VoteKickParticipantV1,
-    ActorRefV1ActorType,
 )
 
 def _expect_mapping(value: Any, field_name: str) -> Mapping[str, Any]:

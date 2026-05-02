@@ -24,7 +24,7 @@ This command runs the generated-model roundtrip tests for the generated maps, ch
 
 ### Full Python validation for the current repository state
 ```bash
-uv run pytest
+uv run --extra dev pytest
 ```
 
 ## CI Intent

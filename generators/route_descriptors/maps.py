@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ..model import NormalizedRoute, NormalizedSchema
-from .core import MessageDescriptor, RouteDescriptor, RouteResponseDescriptor, build_route_descriptors
+from .core import RouteDescriptor, build_route_descriptors
 
 
 def build_maps_route_descriptors(

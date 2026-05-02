@@ -11,7 +11,6 @@ from .shared import (
     ActorRefV1,
     DiscordIdentityRefV1,
     PlayerRefV1,
-    ActorRefV1ActorType,
 )
 
 def _expect_mapping(value: Any, field_name: str) -> Mapping[str, Any]:

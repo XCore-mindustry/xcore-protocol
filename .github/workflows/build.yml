@@ -57,7 +57,7 @@ jobs:
         run: |
           uv run python scripts/validate-generation.py
           uv run python scripts/validate-generated-models.py
-          uv run pytest
+          uv run --extra dev pytest
           ./gradlew build
 
       - name: Validate protocol surface and publish snapshot
@@ -65,7 +65,7 @@ jobs:
         run: |
           uv run python scripts/validate-generation.py
           uv run python scripts/validate-generated-models.py
-          uv run pytest
+          uv run --extra dev pytest
           ./gradlew build publishMavenJavaPublicationToXcoreRepositorySnapshotsRepository -PxcorePublishVersion="$XCORE_PUBLISH_VERSION"
         env:
           ORG_GRADLE_PROJECT_xcoreRepositorySnapshotsUsername: ${{ secrets.XCORE_USERNAME }}

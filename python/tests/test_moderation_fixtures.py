@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 from xcore_protocol.paths import fixtures_root, spec_root
 from xcore_protocol.schema_validation import assert_invalid, assert_valid
 
