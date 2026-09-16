@@ -1,4 +1,4 @@
-"""Generated canonical chat protocol models."""
+"""Generated canonical identity protocol models."""
 
 from __future__ import annotations
 
@@ -107,34 +107,34 @@ def _expect_instance(value: Any, field_name: str, expected_type: type[Any]) -> N
         raise TypeError(f"{field_name} must be a {expected_type.__name__}")
 
 @dataclass(frozen=True, slots=True)
-class ChatDiscordIngressCommandV1:
-    authorName: str
-    message: str
+class PlayerActiveBadgeChangedCommandV1:
+    playerUuid: str
+    activeBadge: str
     server: str
 
-    MESSAGE_TYPE: ClassVar[str] = 'chat.discord-ingress.command'
+    MESSAGE_TYPE: ClassVar[str] = 'player.active-badge.changed.command'
     MESSAGE_VERSION: ClassVar[int] = 1
     def __post_init__(self) -> None:
-        _expect_str(self.authorName, 'authorName')
-        _expect_str(self.message, 'message')
+        _expect_str(self.playerUuid, 'playerUuid')
+        _expect_str(self.activeBadge, 'activeBadge')
         _expect_str(self.server, 'server')
 
     @classmethod
-    def from_payload(cls, payload: Mapping[str, Any]) -> "ChatDiscordIngressCommandV1":
-        mapping = _expect_mapping(payload, "ChatDiscordIngressCommandV1")
+    def from_payload(cls, payload: Mapping[str, Any]) -> "PlayerActiveBadgeChangedCommandV1":
+        mapping = _expect_mapping(payload, "PlayerActiveBadgeChangedCommandV1")
         _expect_exact_keys(
             mapping,
-            required=frozenset(('messageType', 'messageVersion', 'authorName', 'message', 'server')),
-            allowed=frozenset(('messageType', 'messageVersion', 'authorName', 'message', 'server')),
-            model_name="ChatDiscordIngressCommandV1",
+            required=frozenset(('messageType', 'messageVersion', 'playerUuid', 'activeBadge', 'server')),
+            allowed=frozenset(('messageType', 'messageVersion', 'playerUuid', 'activeBadge', 'server')),
+            model_name="PlayerActiveBadgeChangedCommandV1",
         )
         if mapping['messageType'] != cls.MESSAGE_TYPE:
             raise ValueError('messageType' + " must equal " + repr(cls.MESSAGE_TYPE))
         if mapping['messageVersion'] != cls.MESSAGE_VERSION:
             raise ValueError('messageVersion' + " must equal " + repr(cls.MESSAGE_VERSION))
         return cls(
-            authorName=_expect_str(mapping['authorName'], 'authorName'),
-            message=_expect_str(mapping['message'], 'message'),
+            playerUuid=_expect_str(mapping['playerUuid'], 'playerUuid'),
+            activeBadge=_expect_str(mapping['activeBadge'], 'activeBadge'),
             server=_expect_str(mapping['server'], 'server'),
         )
 
@@ -143,40 +143,46 @@ class ChatDiscordIngressCommandV1:
             'messageType': self.MESSAGE_TYPE,
             'messageVersion': self.MESSAGE_VERSION,
         }
-        payload['authorName'] = self.authorName
-        payload['message'] = self.message
+        payload['playerUuid'] = self.playerUuid
+        payload['activeBadge'] = self.activeBadge
         payload['server'] = self.server
         return payload
 
 @dataclass(frozen=True, slots=True)
-class ChatGlobalV1:
-    authorName: str
-    message: str
+class PlayerBadgeInventoryChangedCommandV1:
+    playerUuid: str
+    activeBadge: str
+    unlockedBadges: tuple[str, ...]
     server: str
 
-    MESSAGE_TYPE: ClassVar[str] = 'chat.global'
+    MESSAGE_TYPE: ClassVar[str] = 'player.badge-inventory.changed.command'
     MESSAGE_VERSION: ClassVar[int] = 1
     def __post_init__(self) -> None:
-        _expect_str(self.authorName, 'authorName')
-        _expect_str(self.message, 'message')
+        _expect_str(self.playerUuid, 'playerUuid')
+        _expect_str(self.activeBadge, 'activeBadge')
+        if not isinstance(self.unlockedBadges, tuple):
+            raise TypeError("unlockedBadges must be a tuple")
+        for item in self.unlockedBadges:
+            _expect_str(item, 'unlockedBadges[]')
         _expect_str(self.server, 'server')
 
     @classmethod
-    def from_payload(cls, payload: Mapping[str, Any]) -> "ChatGlobalV1":
-        mapping = _expect_mapping(payload, "ChatGlobalV1")
+    def from_payload(cls, payload: Mapping[str, Any]) -> "PlayerBadgeInventoryChangedCommandV1":
+        mapping = _expect_mapping(payload, "PlayerBadgeInventoryChangedCommandV1")
         _expect_exact_keys(
             mapping,
-            required=frozenset(('messageType', 'messageVersion', 'authorName', 'message', 'server')),
-            allowed=frozenset(('messageType', 'messageVersion', 'authorName', 'message', 'server')),
-            model_name="ChatGlobalV1",
+            required=frozenset(('messageType', 'messageVersion', 'playerUuid', 'activeBadge', 'unlockedBadges', 'server')),
+            allowed=frozenset(('messageType', 'messageVersion', 'playerUuid', 'activeBadge', 'unlockedBadges', 'server')),
+            model_name="PlayerBadgeInventoryChangedCommandV1",
         )
         if mapping['messageType'] != cls.MESSAGE_TYPE:
             raise ValueError('messageType' + " must equal " + repr(cls.MESSAGE_TYPE))
         if mapping['messageVersion'] != cls.MESSAGE_VERSION:
             raise ValueError('messageVersion' + " must equal " + repr(cls.MESSAGE_VERSION))
         return cls(
-            authorName=_expect_str(mapping['authorName'], 'authorName'),
-            message=_expect_str(mapping['message'], 'message'),
+            playerUuid=_expect_str(mapping['playerUuid'], 'playerUuid'),
+            activeBadge=_expect_str(mapping['activeBadge'], 'activeBadge'),
+            unlockedBadges=tuple(_expect_str(item, 'unlockedBadges[]') for item in _expect_list(mapping['unlockedBadges'], 'unlockedBadges')),
             server=_expect_str(mapping['server'], 'server'),
         )
 
@@ -185,40 +191,41 @@ class ChatGlobalV1:
             'messageType': self.MESSAGE_TYPE,
             'messageVersion': self.MESSAGE_VERSION,
         }
-        payload['authorName'] = self.authorName
-        payload['message'] = self.message
+        payload['playerUuid'] = self.playerUuid
+        payload['activeBadge'] = self.activeBadge
+        payload['unlockedBadges'] = [item for item in self.unlockedBadges]
         payload['server'] = self.server
         return payload
 
 @dataclass(frozen=True, slots=True)
-class ChatMessageV1:
-    authorName: str
-    message: str
+class PlayerBadgeSymbolColorModeChangedCommandV1:
+    playerUuid: str
+    badgeSymbolColorMode: str
     server: str
 
-    MESSAGE_TYPE: ClassVar[str] = 'chat.message'
+    MESSAGE_TYPE: ClassVar[str] = 'player.badge-symbol-color-mode.changed.command'
     MESSAGE_VERSION: ClassVar[int] = 1
     def __post_init__(self) -> None:
-        _expect_str(self.authorName, 'authorName')
-        _expect_str(self.message, 'message')
+        _expect_str(self.playerUuid, 'playerUuid')
+        _expect_str(self.badgeSymbolColorMode, 'badgeSymbolColorMode')
         _expect_str(self.server, 'server')
 
     @classmethod
-    def from_payload(cls, payload: Mapping[str, Any]) -> "ChatMessageV1":
-        mapping = _expect_mapping(payload, "ChatMessageV1")
+    def from_payload(cls, payload: Mapping[str, Any]) -> "PlayerBadgeSymbolColorModeChangedCommandV1":
+        mapping = _expect_mapping(payload, "PlayerBadgeSymbolColorModeChangedCommandV1")
         _expect_exact_keys(
             mapping,
-            required=frozenset(('messageType', 'messageVersion', 'authorName', 'message', 'server')),
-            allowed=frozenset(('messageType', 'messageVersion', 'authorName', 'message', 'server')),
-            model_name="ChatMessageV1",
+            required=frozenset(('messageType', 'messageVersion', 'playerUuid', 'badgeSymbolColorMode', 'server')),
+            allowed=frozenset(('messageType', 'messageVersion', 'playerUuid', 'badgeSymbolColorMode', 'server')),
+            model_name="PlayerBadgeSymbolColorModeChangedCommandV1",
         )
         if mapping['messageType'] != cls.MESSAGE_TYPE:
             raise ValueError('messageType' + " must equal " + repr(cls.MESSAGE_TYPE))
         if mapping['messageVersion'] != cls.MESSAGE_VERSION:
             raise ValueError('messageVersion' + " must equal " + repr(cls.MESSAGE_VERSION))
         return cls(
-            authorName=_expect_str(mapping['authorName'], 'authorName'),
-            message=_expect_str(mapping['message'], 'message'),
+            playerUuid=_expect_str(mapping['playerUuid'], 'playerUuid'),
+            badgeSymbolColorMode=_expect_str(mapping['badgeSymbolColorMode'], 'badgeSymbolColorMode'),
             server=_expect_str(mapping['server'], 'server'),
         )
 
@@ -227,52 +234,40 @@ class ChatMessageV1:
             'messageType': self.MESSAGE_TYPE,
             'messageVersion': self.MESSAGE_VERSION,
         }
-        payload['authorName'] = self.authorName
-        payload['message'] = self.message
+        payload['playerUuid'] = self.playerUuid
+        payload['badgeSymbolColorMode'] = self.badgeSymbolColorMode
         payload['server'] = self.server
         return payload
 
 @dataclass(frozen=True, slots=True)
-class ChatPrivateV1:
-    fromUuid: str
-    fromPid: int
-    fromName: str
-    toUuid: str
-    toPid: int
-    message: str
+class PlayerCustomNicknameChangedCommandV1:
+    playerUuid: str
+    customNickname: str
     server: str
 
-    MESSAGE_TYPE: ClassVar[str] = 'chat.private'
+    MESSAGE_TYPE: ClassVar[str] = 'player.custom-nickname.changed.command'
     MESSAGE_VERSION: ClassVar[int] = 1
     def __post_init__(self) -> None:
-        _expect_str(self.fromUuid, 'fromUuid')
-        _expect_int(self.fromPid, 'fromPid')
-        _expect_str(self.fromName, 'fromName')
-        _expect_str(self.toUuid, 'toUuid')
-        _expect_int(self.toPid, 'toPid')
-        _expect_str(self.message, 'message')
+        _expect_str(self.playerUuid, 'playerUuid')
+        _expect_str(self.customNickname, 'customNickname')
         _expect_str(self.server, 'server')
 
     @classmethod
-    def from_payload(cls, payload: Mapping[str, Any]) -> "ChatPrivateV1":
-        mapping = _expect_mapping(payload, "ChatPrivateV1")
+    def from_payload(cls, payload: Mapping[str, Any]) -> "PlayerCustomNicknameChangedCommandV1":
+        mapping = _expect_mapping(payload, "PlayerCustomNicknameChangedCommandV1")
         _expect_exact_keys(
             mapping,
-            required=frozenset(('messageType', 'messageVersion', 'fromUuid', 'fromPid', 'fromName', 'toUuid', 'toPid', 'message', 'server')),
-            allowed=frozenset(('messageType', 'messageVersion', 'fromUuid', 'fromPid', 'fromName', 'toUuid', 'toPid', 'message', 'server')),
-            model_name="ChatPrivateV1",
+            required=frozenset(('messageType', 'messageVersion', 'playerUuid', 'customNickname', 'server')),
+            allowed=frozenset(('messageType', 'messageVersion', 'playerUuid', 'customNickname', 'server')),
+            model_name="PlayerCustomNicknameChangedCommandV1",
         )
         if mapping['messageType'] != cls.MESSAGE_TYPE:
             raise ValueError('messageType' + " must equal " + repr(cls.MESSAGE_TYPE))
         if mapping['messageVersion'] != cls.MESSAGE_VERSION:
             raise ValueError('messageVersion' + " must equal " + repr(cls.MESSAGE_VERSION))
         return cls(
-            fromUuid=_expect_str(mapping['fromUuid'], 'fromUuid'),
-            fromPid=_expect_int(mapping['fromPid'], 'fromPid'),
-            fromName=_expect_str(mapping['fromName'], 'fromName'),
-            toUuid=_expect_str(mapping['toUuid'], 'toUuid'),
-            toPid=_expect_int(mapping['toPid'], 'toPid'),
-            message=_expect_str(mapping['message'], 'message'),
+            playerUuid=_expect_str(mapping['playerUuid'], 'playerUuid'),
+            customNickname=_expect_str(mapping['customNickname'], 'customNickname'),
             server=_expect_str(mapping['server'], 'server'),
         )
 
@@ -281,18 +276,57 @@ class ChatPrivateV1:
             'messageType': self.MESSAGE_TYPE,
             'messageVersion': self.MESSAGE_VERSION,
         }
-        payload['fromUuid'] = self.fromUuid
-        payload['fromPid'] = self.fromPid
-        payload['fromName'] = self.fromName
-        payload['toUuid'] = self.toUuid
-        payload['toPid'] = self.toPid
-        payload['message'] = self.message
+        payload['playerUuid'] = self.playerUuid
+        payload['customNickname'] = self.customNickname
         payload['server'] = self.server
+        return payload
+
+@dataclass(frozen=True, slots=True)
+class PlayerJoinLeaveV1:
+    playerName: str
+    server: str
+    joined: bool
+
+    MESSAGE_TYPE: ClassVar[str] = 'player.join-leave'
+    MESSAGE_VERSION: ClassVar[int] = 1
+    def __post_init__(self) -> None:
+        _expect_str(self.playerName, 'playerName')
+        _expect_str(self.server, 'server')
+        _expect_bool(self.joined, 'joined')
+
+    @classmethod
+    def from_payload(cls, payload: Mapping[str, Any]) -> "PlayerJoinLeaveV1":
+        mapping = _expect_mapping(payload, "PlayerJoinLeaveV1")
+        _expect_exact_keys(
+            mapping,
+            required=frozenset(('messageType', 'messageVersion', 'playerName', 'server', 'joined')),
+            allowed=frozenset(('messageType', 'messageVersion', 'playerName', 'server', 'joined')),
+            model_name="PlayerJoinLeaveV1",
+        )
+        if mapping['messageType'] != cls.MESSAGE_TYPE:
+            raise ValueError('messageType' + " must equal " + repr(cls.MESSAGE_TYPE))
+        if mapping['messageVersion'] != cls.MESSAGE_VERSION:
+            raise ValueError('messageVersion' + " must equal " + repr(cls.MESSAGE_VERSION))
+        return cls(
+            playerName=_expect_str(mapping['playerName'], 'playerName'),
+            server=_expect_str(mapping['server'], 'server'),
+            joined=_expect_bool(mapping['joined'], 'joined'),
+        )
+
+    def to_payload(self) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            'messageType': self.MESSAGE_TYPE,
+            'messageVersion': self.MESSAGE_VERSION,
+        }
+        payload['playerName'] = self.playerName
+        payload['server'] = self.server
+        payload['joined'] = self.joined
         return payload
 
 __all__ = [
-    "ChatDiscordIngressCommandV1",
-    "ChatGlobalV1",
-    "ChatMessageV1",
-    "ChatPrivateV1",
+    "PlayerActiveBadgeChangedCommandV1",
+    "PlayerBadgeInventoryChangedCommandV1",
+    "PlayerBadgeSymbolColorModeChangedCommandV1",
+    "PlayerCustomNicknameChangedCommandV1",
+    "PlayerJoinLeaveV1",
 ]
