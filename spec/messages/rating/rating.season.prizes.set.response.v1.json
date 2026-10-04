@@ -1,38 +1,29 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:xcore:protocol:messages:rating:rating.season.ending-soon:v1",
-  "title": "RatingSeasonEndingSoonV1",
+  "$id": "urn:xcore:protocol:messages:rating:rating.season.prizes.set.response:v1",
+  "title": "RatingSeasonPrizesSetResponseV1",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "messageType",
     "messageVersion",
-    "season",
-    "notice",
     "server",
-    "occurredAt"
+    "season",
+    "prizes"
   ],
   "properties": {
     "messageType": {
-      "const": "rating.season.ending-soon"
+      "const": "rating.season.prizes.set.response"
     },
     "messageVersion": {
       "const": 1
-    },
-    "season": {
-      "$ref": "urn:xcore:protocol:shared:types:season-ref:v1"
-    },
-    "notice": {
-      "type": "string",
-      "minLength": 1
     },
     "server": {
       "type": "string",
       "minLength": 1
     },
-    "occurredAt": {
-      "type": "string",
-      "format": "date-time"
+    "season": {
+      "$ref": "urn:xcore:protocol:shared:types:season-ref:v1"
     },
     "prizes": {
       "type": "array",
